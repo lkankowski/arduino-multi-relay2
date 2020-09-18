@@ -1,0 +1,5 @@
+.pio
+.vscode/*
+*.hex
+include/config.h
+include/config.h.local

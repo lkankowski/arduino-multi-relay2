@@ -1,0 +1,52 @@
+// for development purposes copy "config.h.sample" into "config.h" file or use link:
+// - Windows 10 (PowerShell) as admin: Start-Process -FilePath "$env:comspec" -ArgumentList "/k", "mklink", "config.h","config.h.sample"
+// For production you can customize "config.h" or use link to "config.h.local":
+// Start-Process -FilePath "$env:comspec" -ArgumentList "/k", "mklink", "config.h","config.h.local"
+// Alternative version:
+// Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\config.h' -ItemType SymbolicLink -Value '$(Get-Location)\config.h.pkuchciak'"
+
+
+// For mono-stable buttons it will trigger state: LOW - when button is pressed, HIGH - when button is released
+const uint8_t MONO_STABLE_TRIGGER = LOW;
+
+// time interval for RELAY_IMPULSE type relay, ignored when button type is DING_DONG or REED_SWITCH
+unsigned long RELAY_IMPULSE_INTERVAL = 250;
+
+// debounce interval in milliseconds
+unsigned long BUTTON_DEBOUNCE_INTERVAL = 50;
+
+// double-click interval in milliseconds
+unsigned long BUTTON_DOUBLE_CLICK_INTERVAL = 350;
+
+// long-press interval in milliseconds
+unsigned long BUTTON_LONG_PRESS_INTERVAL = 800;
+
+// Relays config - ID and PIN MUST BE UNIQUE (can't be repeated)!
+// Row params: relay ID - [0-254] sensor ID reported on MySensor Gateway
+//             relay pin - Expander supported
+//             relay options - [RELAY_TRIGGER_LOW|RELAY_TRIGGER_HIGH] {RELAY_STARTUP_ON|RELAY_STARTUP_OFF} {RELAY_IMPULSE}
+//             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, can be empty ("")
+RelayDef myRelays[] = {
+  {1, 2, RELAY_TRIGGER_LOW, "RELAY 1"},
+  {2, 3, RELAY_TRIGGER_LOW, "RELAY 2"},
+  {3, 4, RELAY_TRIGGER_LOW, "RELAY 3"},
+  {4, 5, RELAY_TRIGGER_LOW, "RELAY 4"},
+  {5, 6, RELAY_TRIGGER_LOW, "RELAY 5"},
+  {6, 7, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, "RELAY 6"},
+  {7, 8, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, "RELAY 7"}
+};
+
+// Row params: button pin - no support for Expander
+//             button type - [MONO_STABLE|BI_STABLE|DING_DONG|REED_SWITCH]
+//             click action relay ID - MUST be defined in myRelays
+//             long-press action relay ID - ignored for BI_STABLE, DING_DONG, REED_SWITCH
+//             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
+//             button description - debug only, can be empty ("")
+ButtonDef myButtons[] = {
+  {A0,  MONO_STABLE, 1,  -1, -1, "BUTTON 1"},
+  {A1,  MONO_STABLE, 2,   6, -1, "BUTTON 2"},
+  {A2,  MONO_STABLE, 3,   1,  7, "BUTTON 3"},
+  {A3,  BI_STABLE,   4,  -1, -1, "BUTTON 4"},
+  {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"}
+};
+//decisions: multiple relays for one button?
