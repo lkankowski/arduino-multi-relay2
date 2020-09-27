@@ -1,10 +1,11 @@
 #include <Button.h>
 
+using namespace lkankowski;
 
 // static variables initialisation
-unsigned long MyButton::_doubleclickInterval = 350;
-unsigned long MyButton::_longclickInterval = 800;
-uint8_t MyButton::_monoStableTrigger = 0;
+unsigned long lkankowski::Button::_doubleclickInterval = 350;
+unsigned long lkankowski::Button::_longclickInterval = 800;
+uint8_t lkankowski::Button::_monoStableTrigger = 0;
 #if defined(EXPANDER_PCF8574)
   PCF8574 * BounceExp::_expander = NULL;
 #elif defined(EXPANDER_MCP23017)
@@ -12,7 +13,7 @@ uint8_t MyButton::_monoStableTrigger = 0;
 #endif
 
 
-MyButton::MyButton()
+lkankowski::Button::Button()
     : _pin(0)
     , _type(MONO_STABLE)
     , _description(NULL)
@@ -25,39 +26,39 @@ MyButton::MyButton()
 {};
 
 
-void MyButton::initialize(int type, const char * desc) {
+void lkankowski::Button::initialize(int type, const char * desc) {
   _type = type & 0x0f;
   if (type & PRESSED_STATE_HIGH) _stateForPressed = true;
   _description = desc;
 };
 
 
-void MyButton::setAction(int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum) {
+void lkankowski::Button::setAction(int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum) {
   _clickRelayNum = clickRelayNum;
   _longclickRelayNum = longclickRelayNum;
   _doubleclickRelayNum = doubleclickRelayNum;
 };
 
 
-void MyButton::attachPin(int pin) {
+void lkankowski::Button::attachPin(int pin) {
 
   // No Expander support for buttons (de-bouncing)
   _physicalButton.attach(pin, INPUT_PULLUP); // HIGH state when button is not pushed
 };
 
 
-void MyButton::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval) {
+void lkankowski::Button::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval) {
   _doubleclickInterval = doubleclickInterval;
   _longclickInterval = longclickInterval;
 };
 
 
-void MyButton::setMonoStableTrigger(unsigned char monoStableTrigger) {
+void lkankowski::Button::setMonoStableTrigger(unsigned char monoStableTrigger) {
   _monoStableTrigger = monoStableTrigger;
 };
 
 
-int MyButton::updateAndGetRelayNum() {
+int lkankowski::Button::updateAndGetRelayNum() {
 
   bool isPinChanged = _physicalButton.update();
   int buttonPinState = _physicalButton.read();
@@ -69,25 +70,25 @@ int MyButton::updateAndGetRelayNum() {
       relayNum = _clickRelayNum;
   } else if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
-    Serial.print(_description);
-    Serial.print(" - Click for relay ");
-    Serial.println(relayNum);
+    #ifdef DEBUG_ACTION
+      Serial.println(String(_description) + " - Click for relay " + relayNum);
+    #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
-    Serial.print(_description);
-    Serial.print(" - DoubleClick for relay ");
-    Serial.println(relayNum);
+    #ifdef DEBUG_ACTION
+      Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
+    #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
-    Serial.print(_description);
-    Serial.print(" - LongPress for relay ");
-    Serial.println(relayNum);
+    #ifdef DEBUG_ACTION
+      Serial.println(String(_description) + " - LongPress for relay " + relayNum);
+    #endif
   }
   return(relayNum);
 };
 
 
-bool MyButton::getRelayState(bool relayState) {
+bool lkankowski::Button::getRelayState(bool relayState) {
   
   bool result;
   if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
@@ -101,21 +102,13 @@ bool MyButton::getRelayState(bool relayState) {
 };
 
 
-int MyButton::getEvent(bool isPinChanged, int pinState) {
+int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
 
   int result = BUTTON_NO_EVENT;
   int activeLevel = pinState == (_type == REED_SWITCH ? ! _stateForPressed : _stateForPressed);
 
   bool hasLongClick = _longclickRelayNum != -1;
   bool hasDoubleClick = _doubleclickRelayNum != -1;
-
-
-  #ifdef MY_DEBUG
-    // Serial.print("# Button ");
-    // Serial.print(buttonNum);
-    // Serial.print(" changed to: ");
-    // Serial.println(pinState);
-  #endif
 
   unsigned long now = millis();
 

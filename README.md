@@ -149,3 +149,18 @@ To simplify using expanders, there is "E(a,b)" macro:
 E(0,0) - first pin on first expander
 ```
 
+# Notes
+Show debug stats
+```
+0;255;1;0;24;1
+```
+
+Show all relays state
+```
+0;255;1;0;24;2
+```
+
+Show all buttons state
+```
+0;255;1;0;24;3
+```

@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <EEPROM.h>
 
+using namespace lkankowski;
 
 // static variables initialisation
 int Relay::_impulsePending = 0;
@@ -125,13 +126,6 @@ bool Relay::changeState(bool state) {
 
 
 bool Relay::getState() {
-  
-  #ifdef MY_DEBUG
-    Serial.print("# getState: ");
-    Serial.print(relayNum);
-    Serial.print(" = ");
-    Serial.println(relayState);
-  #endif
   return(_state);
 };
 

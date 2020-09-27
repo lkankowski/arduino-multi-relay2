@@ -4,6 +4,8 @@
 #include <Bounce2.h>
 #include <stdint.h>
 
+namespace lkankowski {
+
 #if defined(EXPANDER_PCF8574)
   #include "PCF8574.h"
   #define USE_EXPANDER
@@ -96,10 +98,10 @@ class BounceExp : public Bounce {
 #endif
 
 
-class MyButton {
+class Button {
 
   public:
-    MyButton();
+    Button();
     void initialize(int, const char *);
     void setAction(int, int, int);
     void attachPin(int);
@@ -110,18 +112,12 @@ class MyButton {
     bool getRelayState(bool);
     int getEvent(bool, int);
     inline bool getState() { return(_physicalButton.read()); };
+    inline const char * getDescription() { return(_description); };
     #if defined(EXPANDER_PCF8574)
       static void expanderInit(PCF8574 * exp) { BounceExp::setExpander(exp); };
     #elif defined(EXPANDER_MCP23017)
       static void expanderInit(Adafruit_MCP23017 * exp) { BounceExp::setExpander(exp); };
     #endif
-    void debug() {
-      Serial.print(_clickRelayNum);
-      Serial.print(",");
-      Serial.print(_longclickRelayNum);
-      Serial.print(",");
-      Serial.println(_doubleclickRelayNum);
-    }
 
   private:
     int _pin;
@@ -138,5 +134,7 @@ class MyButton {
     static unsigned long _doubleclickInterval;
     static unsigned long _longclickInterval;
 };
+
+} //namespace
 
 #endif

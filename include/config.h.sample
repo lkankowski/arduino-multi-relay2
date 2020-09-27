@@ -5,10 +5,6 @@
 // Alternative version:
 // Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\include\config.h' -ItemType SymbolicLink -Value '$(Get-Location)\include\config.h.sample'"
 
-// Enable debug prints to serial monitor
-#define MY_DEBUG
-#define DEBUG_STATS 1000
-
 
 // For mono-stable buttons it will trigger state: LOW - when button is pressed, HIGH - when button is released
 const uint8_t MONO_STABLE_TRIGGER = LOW;

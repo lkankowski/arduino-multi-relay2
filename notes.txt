@@ -1,0 +1,4 @@
+benchmark:
+- 421ms - moja konfiguracja na wersji inicjalnej po refactoringu
+- ??ms - tablice zamienione na "array"
+- ??ms - użycie "vector" do grup

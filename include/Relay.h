@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+namespace lkankowski {
+
 #if defined(EXPANDER_PCF8574)
   #include "PCF8574.h"
   #define USE_EXPANDER
@@ -67,5 +69,7 @@ class Relay {
       static Adafruit_MCP23017 * _expander;
     #endif
 };
+
+} //namespace
 
 #endif
