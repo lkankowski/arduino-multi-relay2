@@ -1,3 +1,5 @@
+# OLD DOCUMENTATION!!!
+
 # About
 Arduino program to handle relays and control them using switches.
 Single pair of relay and switch are configured in single line.
