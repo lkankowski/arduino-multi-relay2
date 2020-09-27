@@ -35,12 +35,12 @@ class Relay {
   public:
     Relay();
     void initialize(int, int, const char *);
-    static void setImpulseInterval(unsigned long);
+    static void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
     void attachPin(int);
     void setModeAndStartupState(int, bool);
-    void start();
+    void start() { changeState(_state); };
     bool changeState(bool);
-    bool getState();
+    bool getState() { return(_state); };
     inline int getSensorId() {return(_sensorId); };
     static bool isImpulsePending() { return(_impulsePending > 0); };
     bool impulseProcess();

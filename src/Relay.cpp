@@ -34,11 +34,6 @@ void Relay::initialize(int index, int sensorId, const char * description) {
 };
 
 
-void Relay::setImpulseInterval(unsigned long impulseInterval) {
-  _impulseInterval = impulseInterval;
-};
-
-
 void Relay::attachPin(int pin) {
     _pin = pin;
 
@@ -66,8 +61,12 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
       _state = true;
       _hasStartupOverride = true;
     } else if (mode & RELAY_STARTUP_OFF) {
-        _state = false;
-        _hasStartupOverride = true;
+      _state = false;
+      _hasStartupOverride = true;
+    } else if (mode & RELAY_IMPULSE) {
+      _isImpulse = true;
+      _state = false;
+      _hasStartupOverride = true;
     } else {
         // Set relay to last known state (using eeprom storage)
         _state = EEPROM.read(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
@@ -76,15 +75,6 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
             _state = false;
       }
     }
-    if (mode & RELAY_IMPULSE) {
-      _isImpulse = true;
-    }
-};
-
-
-void Relay::start() {
-
-    changeState(_state);
 };
 
 
@@ -94,15 +84,15 @@ bool Relay::changeState(bool state) {
     uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
 
     #ifdef USE_EXPANDER
-        if ( _pin & 0xff00 ) {
-            int expanderNo = (_pin >> 8) - 1;
-            int expanderPin = _pin & 0xff;
-            _expander[expanderNo].digitalWrite(expanderPin, digitalOutState);
-        } else {
+      if ( _pin & 0xff00 ) {
+        int expanderNo = (_pin >> 8) - 1;
+        int expanderPin = _pin & 0xff;
+        _expander[expanderNo].digitalWrite(expanderPin, digitalOutState);
+      } else {
     #endif
-            digitalWrite(_pin, digitalOutState);
+        digitalWrite(_pin, digitalOutState);
     #ifdef USE_EXPANDER
-        }
+      }
     #endif
 
     if (! _hasStartupOverride && stateHasChanged) {
@@ -125,11 +115,6 @@ bool Relay::changeState(bool state) {
 };
 
 
-bool Relay::getState() {
-  return(_state);
-};
-
-
 bool Relay::impulseProcess() {
 
   if (_isImpulse && _impulseStartMillis > 0) {
@@ -137,12 +122,8 @@ bool Relay::impulseProcess() {
 
     // the "|| (currentMillis < myRelayImpulseStart[i])" is for "millis()" overflow protection
     if ((currentMillis > _impulseStartMillis+_impulseInterval) || (currentMillis < _impulseStartMillis)) {
-      if (_state) {
-        changeState(false);
-      }
-      return(true);
+      return(changeState(false));
     }
-
   }
   return(false);
 };
