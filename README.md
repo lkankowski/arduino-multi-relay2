@@ -25,7 +25,7 @@ Params description:
 * relay options - combined with '|' operator:
   * RELAY_TRIGGER_LOW or RELAY_TRIGGER_HIGH - trigger level, required
   * RELAY_STARTUP_ON or RELAY_STARTUP_OFF - startup state, optional
-  * RELAY_IMPULSE - optional, relay is turned on only for short period of time (defined in constant RELAY_IMPULSE_INTERVAL, 250ms by default), ignored for DING_DONG and REED_SWITCH buttons
+  * RELAY_IMPULSE - optional, relay is turned on only for short period of time (defined in constant RELAY_IMPULSE_INTERVAL, 250ms by default), ignored for DING_DONG and REED_SWITCH buttons, this button always start OFF(don`t use RELAY_STARTUP_OFF), also this switch no save to EEPROM.
 * button type:
   * MONO_STABLE - GND connected to the button pin
   * BI_STABLE - state change from LOW to HIGH and HIGH to LOW, used with mechanical and touch buttons
