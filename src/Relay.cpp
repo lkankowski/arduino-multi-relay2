@@ -57,14 +57,14 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
     
     _triggerState = mode & RELAY_TRIGGER_HIGH;
 
-    if (mode & RELAY_STARTUP_ON) {
+    if (mode & RELAY_IMPULSE) {
+      _isImpulse = true;
+      _state = false;
+      _hasStartupOverride = true;
+    } else if (mode & RELAY_STARTUP_ON) {
       _state = true;
       _hasStartupOverride = true;
     } else if (mode & RELAY_STARTUP_OFF) {
-      _state = false;
-      _hasStartupOverride = true;
-    } else if (mode & RELAY_IMPULSE) {
-      _isImpulse = true;
       _state = false;
       _hasStartupOverride = true;
     } else {
@@ -99,7 +99,7 @@ bool Relay::changeState(bool state) {
         EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
     }
 
-    if (_isImpulse) {
+    if (_isImpulse && stateHasChanged) {
       if (state) {
         _impulseStartMillis = millis();
         _impulsePending++;
