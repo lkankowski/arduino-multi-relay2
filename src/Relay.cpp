@@ -4,6 +4,10 @@
 
 using namespace lkankowski;
 
+#ifdef DEBUG_STARTUP
+  extern unsigned long debugCounter;
+#endif
+
 // static variables initialisation
 int Relay::_impulsePending = 0;
 unsigned long Relay::_impulseInterval = 250;
@@ -80,6 +84,11 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
 
 bool Relay::changeState(bool state) {
 
+    #ifdef DEBUG_STARTUP
+      Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
+                     +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex
+                     +", (uint8_t) state="+((uint8_t) state)+", _isImpulse="+_isImpulse);
+    #endif
     bool stateHasChanged = state != _state;
     uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
 

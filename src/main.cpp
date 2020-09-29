@@ -41,6 +41,10 @@ const int gNumberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
   unsigned long loopInterval = 0;
   unsigned long loopCumulativeMillis = 0;
 #endif
+#ifdef DEBUG_STARTUP
+  unsigned long debugCounter = 0;
+#endif
+  
 
 
 MyMessage myMessage; // MySensors - Sending Data
@@ -56,6 +60,27 @@ lkankowski::Button gButton[gNumberOfButtons];
 // MySensors - This will execute before MySensors starts up
 void before() {
   Serial.begin(115200);
+
+  #ifdef DEBUG_STARTUP
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - relay config");
+    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+      Serial.println(String("# ")+(debugCounter++)+" > "+gRelayConfig[relayNum].sensorId+";"+gRelayConfig[relayNum].relayPin+";"
+                     +gRelayConfig[relayNum].relayOptions+";"+gRelayConfig[relayNum].relayDescription);
+    }
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - button config");
+    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+      Serial.println(String("# ")+(debugCounter++)+" > "+gButtonConfig[buttonNum].buttonPin+";"+gButtonConfig[buttonNum].buttonType+";"
+                     +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
+                     +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
+    }
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM");
+    Serial.print(String("# ")+(debugCounter++)+" ");
+    for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
+      Serial.print(EEPROM.read(relayNum));
+      Serial.print(",");
+    }
+    Serial.println();
+  #endif
 
   // validate config
   #ifdef USE_EXPANDER
@@ -217,12 +242,11 @@ void receive(const MyMessage &message) {
   #endif
   if (message.getCommand() == C_SET) {
     if (message.getType() == V_STATUS) {
-      uint8_t isTurnedOn = message.getBool(); // 1 - true, 0 - false
-      int relayNum = getRelayNum(message.sensor);
+      int relayNum = getRelayNum(message.getSensor());
       if (relayNum == -1) return;
-      gRelay[relayNum].changeState(isTurnedOn);
-      myMessage.setSensor(gRelay[relayNum].getSensorId());
-      send(myMessage.set(isTurnedOn)); // support for OPTIMISTIC=FALSE (Home Asistant)
+      gRelay[relayNum].changeState(message.getBool());
+      myMessage.setSensor(message.getSensor());
+      send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
     #ifdef DEBUG_STATS
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
@@ -241,6 +265,8 @@ void receive(const MyMessage &message) {
                          + "; " + gButton[buttonNum].getDescription());
         }
       }
+      // TODO: dump eeprom
+      // TODO: clear eeprom
     #endif
     }
   }
