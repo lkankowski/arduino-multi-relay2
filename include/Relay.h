@@ -41,7 +41,7 @@ class Relay {
     void start() { changeState(_state); };
     bool changeState(bool);
     bool getState() { return(_state); };
-    inline int getSensorId() {return(_sensorId); };
+    int getSensorId() { return(_sensorId); };
     static bool isImpulsePending() { return(_impulsePending > 0); };
     bool impulseProcess();
     const char * getDescription() { return(_description); };

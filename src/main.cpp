@@ -62,6 +62,19 @@ void before() {
   Serial.begin(115200);
 
   #ifdef DEBUG_STARTUP
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - common config: MONO_STABLE_TRIGGER="+MONO_STABLE_TRIGGER
+                   +", RELAY_IMPULSE_INTERVAL="+RELAY_IMPULSE_INTERVAL+", BUTTON_DEBOUNCE_INTERVAL="+BUTTON_DEBOUNCE_INTERVAL
+                   +", BUTTON_DOUBLE_CLICK_INTERVAL="+BUTTON_DOUBLE_CLICK_INTERVAL+", BUTTON_LONG_PRESS_INTERVAL="+BUTTON_LONG_PRESS_INTERVAL);
+
+    #ifdef USE_EXPANDER
+      Serial.println(String("# ")+(debugCounter++)+" Debug startup - expander config");
+      for(int i = 0; i < gNumberOfExpanders; i++) {
+        Serial.print(expanderAddresses[i]);
+        Serial.print(",");
+      }
+      Serial.println();
+    #endif
+
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - relay config");
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
       Serial.println(String("# ")+(debugCounter++)+" > "+gRelayConfig[relayNum].sensorId+";"+gRelayConfig[relayNum].relayPin+";"
@@ -73,10 +86,17 @@ void before() {
                      +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
                      +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
     }
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM");
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (relay state starts at "+RELAY_STATE_STORAGE+")");
     Serial.print(String("# ")+(debugCounter++)+" ");
     for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
       Serial.print(EEPROM.read(relayNum));
+      Serial.print(",");
+    }
+    Serial.println();
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - buttons pin state");
+    Serial.print(String("# ")+(debugCounter++)+" ");
+    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+      Serial.print(digitalRead(gButtonConfig[buttonNum].buttonPin));
       Serial.print(",");
     }
     Serial.println();
@@ -222,7 +242,7 @@ void loop() {
 // MySensors - Presentation - Your sensor must first present itself to the controller.
 // Executed after "before()" and before "setup()"
 void presentation() {
-  sendSketchInfo("Multi Relay", "2.0");
+  sendSketchInfo(MULTI_RELAY_DESCRIPTION, __STRINGIFY(MULTI_RELAY_VERSION));
   
   // Register every relay as separate sensor
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
@@ -267,6 +287,7 @@ void receive(const MyMessage &message) {
       }
       // TODO: dump eeprom
       // TODO: clear eeprom
+      // TODO: reboot
     #endif
     }
   }
