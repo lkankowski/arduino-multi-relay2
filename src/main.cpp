@@ -8,6 +8,10 @@
 
 using namespace lkankowski;
 
+#define xstr(a) str(a)
+#define str(a) #a
+const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
+
 #if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
   #if defined(EXPANDER_PCF8574)
     #include "PCF8574.h"
@@ -55,6 +59,7 @@ Relay gRelay[gNumberOfRelays];
 lkankowski::Button gButton[gNumberOfButtons];
 
 #include <common.h>
+void(* resetFunc) (void) = 0; //declare reset function at address 0
 
 
 // MySensors - This will execute before MySensors starts up
@@ -86,7 +91,7 @@ void before() {
                      +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
                      +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
     }
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (relay state starts at "+RELAY_STATE_STORAGE+")");
+    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (first value is version, relay state starts at "+RELAY_STATE_STORAGE+")");
     Serial.print(String("# ")+(debugCounter++)+" ");
     for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
       Serial.print(EEPROM.read(relayNum));
@@ -95,6 +100,10 @@ void before() {
     Serial.println();
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - buttons pin state");
     Serial.print(String("# ")+(debugCounter++)+" ");
+    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+      pinMode(gButtonConfig[buttonNum].buttonPin, INPUT_PULLUP);
+    }
+    delay(200);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
       Serial.print(digitalRead(gButtonConfig[buttonNum].buttonPin));
       Serial.print(",");
@@ -242,7 +251,7 @@ void loop() {
 // MySensors - Presentation - Your sensor must first present itself to the controller.
 // Executed after "before()" and before "setup()"
 void presentation() {
-  sendSketchInfo(MULTI_RELAY_DESCRIPTION, __STRINGIFY(MULTI_RELAY_VERSION));
+  sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
   
   // Register every relay as separate sensor
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
@@ -284,10 +293,21 @@ void receive(const MyMessage &message) {
           Serial.println(String("# Button ") + buttonNum + " state=" + gButton[buttonNum].getState()
                          + "; " + gButton[buttonNum].getDescription());
         }
+      } else if (debugCommand == 4) { // dump EEPROM
+        Serial.print("# Dump EEPROM: ");
+        for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
+          Serial.print(EEPROM.read(relayNum));
+          Serial.print(",");
+        }
+        Serial.println();
+      } else if (debugCommand == 5) { // clear EEPROM & reset
+        for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+          EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);
+        }
+        resetFunc();
+      } else if (debugCommand == 6) { // reset
+        resetFunc();
       }
-      // TODO: dump eeprom
-      // TODO: clear eeprom
-      // TODO: reboot
     #endif
     }
   }

@@ -166,3 +166,18 @@ Show all buttons state
 ```
 0;255;1;0;24;3
 ```
+
+Dump EEPROM
+```
+0;255;1;0;24;4
+```
+
+Clean EEPROM & reset
+```
+0;255;1;0;24;5
+```
+
+Reset
+```
+0;255;1;0;24;6
+```
