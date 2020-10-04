@@ -69,7 +69,8 @@ void before() {
   #ifdef DEBUG_STARTUP
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - common config: MONO_STABLE_TRIGGER="+MONO_STABLE_TRIGGER
                    +", RELAY_IMPULSE_INTERVAL="+RELAY_IMPULSE_INTERVAL+", BUTTON_DEBOUNCE_INTERVAL="+BUTTON_DEBOUNCE_INTERVAL
-                   +", BUTTON_DOUBLE_CLICK_INTERVAL="+BUTTON_DOUBLE_CLICK_INTERVAL+", BUTTON_LONG_PRESS_INTERVAL="+BUTTON_LONG_PRESS_INTERVAL);
+                   +", BUTTON_DOUBLE_CLICK_INTERVAL="+BUTTON_DOUBLE_CLICK_INTERVAL+", BUTTON_LONG_PRESS_INTERVAL="+BUTTON_LONG_PRESS_INTERVAL
+                   +", MULTI_RELAY_VERSION="+MULTI_RELAY_VERSION);
 
     #ifdef USE_EXPANDER
       Serial.println(String("# ")+(debugCounter++)+" Debug startup - expander config");
@@ -145,6 +146,7 @@ void before() {
         delay(1000);
         assert(0);
     }
+    // TODO: validate if pin is correct to the current board
   }
   
   // if version has changed, reset state of all relays
