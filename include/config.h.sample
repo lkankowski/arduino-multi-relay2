@@ -25,7 +25,7 @@ const unsigned long BUTTON_LONG_PRESS_INTERVAL = 800;
   uint8_t expanderAddresses[] = {0x20};
 #endif
 
-const char * MULTI_RELAY_DESCRIPTION = "Multi Relay";
+const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";
 
 // Relays config - ID and PIN MUST BE UNIQUE (can't be repeated)!
 // Row params: relay ID - [0-254] sensor ID reported on MySensor Gateway

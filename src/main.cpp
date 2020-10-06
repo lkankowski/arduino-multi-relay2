@@ -218,10 +218,16 @@ void loop() {
       // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
       bool relayState = gButton[buttonNum].getRelayState(gRelay[relayNum].getState());
 
-      if (gRelay[relayNum].changeState(relayState)) {
-        myMessage.setSensor(gRelay[relayNum].getSensorId());
-        send(myMessage.set(relayState));
-      }
+      #ifdef IGNORE_BUTTONS_START_MS
+        if (millis() > IGNORE_BUTTONS_START_MS) {
+      #endif
+          if (gRelay[relayNum].changeState(relayState)) {
+            myMessage.setSensor(gRelay[relayNum].getSensorId());
+            send(myMessage.set(relayState));
+          }
+      #ifdef IGNORE_BUTTONS_START_MS
+        }
+      #endif
     }
   }
   
