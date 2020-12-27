@@ -33,7 +33,7 @@ const int gNumberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
 #ifdef USE_EXPANDER
   const int gNumberOfExpanders = sizeof(expanderAddresses);
   #if defined(PCF8574_H)
-    PCF8574 expander[numberOfExpanders];
+    PCF8574 gExpander[gNumberOfExpanders];
   #elif defined(_Adafruit_MCP23017_H_)
     Adafruit_MCP23017 gExpander[gNumberOfExpanders];
   #endif
@@ -52,7 +52,7 @@ const int gNumberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
 
 
 MyMessage myMessage; // MySensors - Sending Data
-#ifdef DEBUG_COMMUNICATION
+#if defined(DEBUG_COMMUNICATION) || defined(DEBUG_STATS)
   MyMessage debugMessage(255, V_TEXT);
 #endif
 Relay gRelay[gNumberOfRelays];
@@ -159,7 +159,7 @@ void before() {
     }
 
     Relay::expanderInit(gExpander);
-    Button::expanderInit(gExpander);
+    lkankowski::Button::expanderInit(gExpander);
   #endif
 
   // initialize relays

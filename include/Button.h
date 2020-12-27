@@ -4,8 +4,6 @@
 #include <Bounce2.h>
 #include <stdint.h>
 
-namespace lkankowski {
-
 #if defined(EXPANDER_PCF8574)
   #include "PCF8574.h"
   #define USE_EXPANDER
@@ -15,6 +13,8 @@ namespace lkankowski {
 #else
   #define BounceExp Bounce
 #endif
+
+namespace lkankowski {
 
 enum ButtonType {
   MONO_STABLE = 0,

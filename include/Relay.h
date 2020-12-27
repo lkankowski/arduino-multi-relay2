@@ -3,8 +3,6 @@
 
 #include <stdint.h>
 
-namespace lkankowski {
-
 #if defined(EXPANDER_PCF8574)
   #include "PCF8574.h"
   #define USE_EXPANDER
@@ -12,6 +10,8 @@ namespace lkankowski {
   #include "Adafruit_MCP23017.h"
   #define USE_EXPANDER
 #endif
+
+namespace lkankowski {
 
 const uint8_t RELAY_TRIGGER_LOW  = 0;
 const uint8_t RELAY_TRIGGER_HIGH = 1;

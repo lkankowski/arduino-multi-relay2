@@ -29,7 +29,7 @@ const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";
 
 // Relays config - ID and PIN MUST BE UNIQUE (can't be repeated)!
 // Row params: relay ID - [0-254] sensor ID reported on MySensor Gateway
-//             relay pin - Expander supported
+//             relay pin - pin used for relay, can be expander pin via "E(x, y)" macro
 //             relay options - [RELAY_TRIGGER_LOW|RELAY_TRIGGER_HIGH] {RELAY_STARTUP_ON|RELAY_STARTUP_OFF} {RELAY_IMPULSE}
 //             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, can be empty ("")
 const RelayConfigDef gRelayConfig[] = {
@@ -42,9 +42,10 @@ const RelayConfigDef gRelayConfig[] = {
   {7, 8, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, "RELAY 7"}
 };
 
-// Row params: button pin - no support for Expander
+// Buttons config
+// Row params: button pin - pin used for button, can be expander pin (but NOT RECOMMENDED) via "E(x, y)" macro
 //             button type - [MONO_STABLE|BI_STABLE|DING_DONG|REED_SWITCH]
-//             click action relay ID - MUST be defined in myRelays
+//             click action relay ID - MUST be defined in gRelayConfig
 //             long-press action relay ID - ignored for BI_STABLE, DING_DONG, REED_SWITCH
 //             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
 //             button description - debug only, can be empty ("")
@@ -55,4 +56,4 @@ const ButtonConfigDef gButtonConfig[] = {
   {A3,  BI_STABLE,   4,  -1, -1, "BUTTON 4"},
   {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"}
 };
-//decisions: multiple relays for one button?
+

@@ -11,6 +11,7 @@ using namespace lkankowski;
 // static variables initialisation
 int Relay::_impulsePending = 0;
 unsigned long Relay::_impulseInterval = 250;
+
 #if defined(EXPANDER_PCF8574)
   PCF8574 * Relay::_expander = NULL;
 #elif defined(EXPANDER_MCP23017)

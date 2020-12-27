@@ -6,6 +6,7 @@ using namespace lkankowski;
 unsigned long lkankowski::Button::_doubleclickInterval = 350;
 unsigned long lkankowski::Button::_longclickInterval = 800;
 uint8_t lkankowski::Button::_monoStableTrigger = 0;
+
 #if defined(EXPANDER_PCF8574)
   PCF8574 * BounceExp::_expander = NULL;
 #elif defined(EXPANDER_MCP23017)
