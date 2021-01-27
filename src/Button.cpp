@@ -95,9 +95,9 @@ bool lkankowski::Button::getRelayState(bool relayState) {
   if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
     result = !relayState;
   } else if (_type == DING_DONG) {
-    result = getState();
+    result = _physicalButton.read();
   } else if (_type == REED_SWITCH) {
-    result = !getState();
+    result = ! _physicalButton.read();
   }
   return(result);
 };
@@ -194,4 +194,10 @@ int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
     result |= BUTTON_CHANGED;
   }
   return result;
+};
+
+
+String lkankowski::Button::toString() {
+
+    return String("state=") + _physicalButton.read() + ", pin=" + _pin + "; " + _description;
 };

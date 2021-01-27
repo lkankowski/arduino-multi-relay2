@@ -1,7 +1,15 @@
 #ifndef Button_h
 #define Button_h
 
-#include <Bounce2.h>
+#if defined(UNIX_HOST_DUINO_VERSION)
+  class Bounce {
+  public:
+    void interval(uint16_t interval_millis);
+    bool read();
+  };
+#else
+  #include <Bounce2.h>
+#endif
 #include <stdint.h>
 
 #if defined(EXPANDER_PCF8574)
@@ -111,8 +119,7 @@ class Button {
     int updateAndGetRelayNum();
     bool getRelayState(bool);
     int getEvent(bool, int);
-    inline bool getState() { return(_physicalButton.read()); };
-    inline const char * getDescription() { return(_description); };
+    String toString();
     #if defined(EXPANDER_PCF8574)
       static void expanderInit(PCF8574 * exp) { BounceExp::setExpander(exp); };
     #elif defined(EXPANDER_MCP23017)
