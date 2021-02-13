@@ -28,8 +28,6 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
 // Configuration in separate file
 #include "config.h"
 
-const int gNumberOfRelays = sizeof(gRelayConfig) / sizeof(RelayConfigDef);
-const int gNumberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
 #ifdef USE_EXPANDER
   const int gNumberOfExpanders = sizeof(expanderAddresses);
   #if defined(PCF8574_H)
@@ -49,16 +47,16 @@ const int gNumberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
   unsigned long debugCounter = 0;
 #endif
   
-
-
 MyMessage myMessage; // MySensors - Sending Data
 #if defined(DEBUG_COMMUNICATION) || defined(DEBUG_STATS)
   MyMessage debugMessage(255, V_TEXT);
 #endif
+
+#include <common.h>
+
 Relay gRelay[gNumberOfRelays];
 lkankowski::Button gButton[gNumberOfButtons];
 
-#include <common.h>
 void(* resetFunc) (void) = 0; //declare reset function at address 0
 
 
@@ -114,6 +112,7 @@ void before() {
 
   // validate config
   #ifdef USE_EXPANDER
+    //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin & 0xff00) {
@@ -298,8 +297,7 @@ void receive(const MyMessage &message) {
         }
       } else if (debugCommand == 3) {
         for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-          Serial.println(String("# Button ") + buttonNum + " state=" + gButton[buttonNum].getState()
-                         + "; " + gButton[buttonNum].getDescription());
+          Serial.println(String("# Button ") + buttonNum + ": " + gButton[buttonNum].toString());
         }
       } else if (debugCommand == 4) { // dump EEPROM
         Serial.print("# Dump EEPROM: ");
