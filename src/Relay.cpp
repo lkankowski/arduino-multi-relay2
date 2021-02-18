@@ -1,6 +1,5 @@
 #include <Relay.h>
 #include <Arduino.h>
-#include <EEPROM.h>
 
 using namespace lkankowski;
 
@@ -9,8 +8,6 @@ using namespace lkankowski;
 #endif
 
 // static variables initialisation
-int Relay::_impulsePending = 0;
-unsigned long Relay::_impulseInterval = 250;
 
 #if defined(EXPANDER_PCF8574)
   PCF8574 * Relay::_expander = NULL;
@@ -22,18 +19,13 @@ unsigned long Relay::_impulseInterval = 250;
 Relay::Relay()
     : _pin(0)
     , _state(false)
-    , _eepromIndex(0)
     , _sensorId(0)
     , _description(NULL)
-    , _hasStartupOverride(false)
     , _triggerState(0)
-    , _isImpulse(false)
-    , _impulseStartMillis(0)
 {};
 
 
-void Relay::initialize(int index, int sensorId, const char * description) {
-    _eepromIndex = index;
+void Relay::initialize(int sensorId, const char * description) {
     _sensorId = sensorId;
     _description = description;
 };
@@ -55,31 +47,6 @@ void Relay::attachPin(int pin) {
     #ifdef USE_EXPANDER
       }
     #endif
-};
-
-
-void Relay::setModeAndStartupState(int mode, bool resetState) {
-    
-    _triggerState = mode & RELAY_TRIGGER_HIGH;
-
-    if (mode & RELAY_IMPULSE) {
-      _isImpulse = true;
-      _state = false;
-      _hasStartupOverride = true;
-    } else if (mode & RELAY_STARTUP_ON) {
-      _state = true;
-      _hasStartupOverride = true;
-    } else if (mode & RELAY_STARTUP_OFF) {
-      _state = false;
-      _hasStartupOverride = true;
-    } else {
-        // Set relay to last known state (using eeprom storage)
-        _state = EEPROM.read(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
-        if (resetState && _state) {
-            EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, 0);
-            _state = false;
-      }
-    }
 };
 
 
@@ -105,35 +72,8 @@ bool Relay::changeState(bool state) {
       }
     #endif
 
-    if (! _hasStartupOverride && stateHasChanged) {
-        EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
-    }
-
-    if (_isImpulse && stateHasChanged) {
-      if (state) {
-        _impulseStartMillis = millis();
-        _impulsePending++;
-      } else {
-        _impulseStartMillis = 0;
-        _impulsePending--;
-      }
-    }
-
     _state = state;
 
     return(stateHasChanged);
 };
 
-
-bool Relay::impulseProcess() {
-
-  if (_isImpulse && _impulseStartMillis > 0) {
-    unsigned long currentMillis = millis();
-
-    // the "|| (currentMillis < myRelayImpulseStart[i])" is for "millis()" overflow protection
-    if ((currentMillis > _impulseStartMillis+_impulseInterval) || (currentMillis < _impulseStartMillis)) {
-      return(changeState(false));
-    }
-  }
-  return(false);
-};

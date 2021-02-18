@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <assert.h>
 #include <EEPROM.h>
+#include <RelayService.h>
 #include <Relay.h>
 #include <Button.h>
 #define MY_GATEWAY_SERIAL
@@ -37,6 +38,8 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
   #endif
 #endif
 
+int gTurnOffDependentsCounter = 2000;
+
 #ifdef DEBUG_STATS
   bool debugStatsOn = false;
   int loopCounter = 0;
@@ -55,6 +58,7 @@ MyMessage myMessage; // MySensors - Sending Data
 #include <common.h>
 
 Relay gRelay[gNumberOfRelays];
+RelayService gRelayService(gNumberOfRelays, gRelay, gRelayConfig);
 lkankowski::Button gButton[gNumberOfButtons];
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
@@ -137,9 +141,9 @@ void before() {
     #endif
     const char * failAction[] = {"OK", "click", "long-press", "double-click"};
     int fail = 0;
-    if ((gButtonConfig[buttonNum].clickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].clickRelayId) == -1)) fail = 1;
-    if ((gButtonConfig[buttonNum].longClickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].longClickRelayId) == -1)) fail = 2;
-    if ((gButtonConfig[buttonNum].doubleClickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId) == -1)) fail = 3;
+    if ((gButtonConfig[buttonNum].clickRelayId != -1) && (gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId) == -1)) fail = 1;
+    if ((gButtonConfig[buttonNum].longClickRelayId != -1) && (gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId) == -1)) fail = 2;
+    if ((gButtonConfig[buttonNum].doubleClickRelayId != -1) && (gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId) == -1)) fail = 3;
     if (fail) {
         Serial.println(String("Configuration failed - invalid '") + failAction[fail] + " relay ID' for button: " + buttonNum);
         delay(1000);
@@ -162,20 +166,15 @@ void before() {
   #endif
 
   // initialize relays
-  Relay::setImpulseInterval(RELAY_IMPULSE_INTERVAL);
-
-  for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    
-    gRelay[relayNum].initialize(relayNum, gRelayConfig[relayNum].sensorId, gRelayConfig[relayNum].relayDescription);
-    gRelay[relayNum].attachPin(gRelayConfig[relayNum].relayPin);
-    gRelay[relayNum].setModeAndStartupState(gRelayConfig[relayNum].relayOptions, versionChangeResetState);
-    gRelay[relayNum].start();
-  }
+  gRelayService.setImpulseInterval(RELAY_IMPULSE_INTERVAL);
+  gRelayService.initialize(versionChangeResetState);
+  
   if (versionChangeResetState) {
     // version has changed, so store new version in eeporom
     EEPROM.write(0, CONFIG_VERSION);
   }
 }; // before()
+
 
 // executed AFTER mysensors has been initialised
 void setup() {
@@ -193,9 +192,9 @@ void setup() {
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
     
     gButton[buttonNum].initialize(gButtonConfig[buttonNum].buttonType, gButtonConfig[buttonNum].buttonDescription);
-    gButton[buttonNum].setAction(getRelayNum(gButtonConfig[buttonNum].clickRelayId),
-                                 getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                                 getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    gButton[buttonNum].setAction(gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
+                                 gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+                                 gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     gButton[buttonNum].setDebounceInterval(BUTTON_DEBOUNCE_INTERVAL);
     gButton[buttonNum].attachPin(gButtonConfig[buttonNum].buttonPin);
   }
@@ -220,7 +219,7 @@ void loop() {
       #ifdef IGNORE_BUTTONS_START_MS
         if (millis() > IGNORE_BUTTONS_START_MS) {
       #endif
-          if (gRelay[relayNum].changeState(relayState)) {
+          if (gRelayService.changeState(relayNum, relayState)) {
             myMessage.setSensor(gRelay[relayNum].getSensorId());
             send(myMessage.set(relayState));
           }
@@ -230,13 +229,18 @@ void loop() {
     }
   }
   
-  if (Relay::isImpulsePending()) {
+  if (gRelayService.isImpulsePending()) {
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-      if (gRelay[relayNum].impulseProcess()) {
+      if (gRelayService.impulseProcess(relayNum)) {
         myMessage.setSensor(gRelay[relayNum].getSensorId());
         send(myMessage.set(0));
       }
     }
+  }
+
+  if (--gTurnOffDependentsCounter <= 0) {
+    gRelayService.turnOffDependent();
+    gTurnOffDependentsCounter = 500;
   }
 
   #ifdef DEBUG_STATS
@@ -278,9 +282,9 @@ void receive(const MyMessage &message) {
   #endif
   if (message.getCommand() == C_SET) {
     if (message.getType() == V_STATUS) {
-      int relayNum = getRelayNum(message.getSensor());
+      int relayNum = gRelayService.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
-      gRelay[relayNum].changeState(message.getBool());
+      gRelayService.changeState(relayNum, message.getBool());
       myMessage.setSensor(message.getSensor());
       send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
     #ifdef DEBUG_STATS
