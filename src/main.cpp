@@ -1,3 +1,6 @@
+#ifndef UNIT_TEST
+#ifdef ARDUINO
+
 #include <Arduino.h>
 #include <assert.h>
 #include <EEPROM.h>
@@ -322,3 +325,8 @@ void receive(const MyMessage &message) {
     }
   }
 };
+
+#else
+int main( int argc, char **argv) {};
+#endif
+#endif

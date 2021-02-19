@@ -42,6 +42,7 @@
 #endif
 
 #include <Relay.h>
+#include <RelayService.h>
 #include <Button.h>
 #include <unity.h>
 
@@ -49,6 +50,9 @@ using namespace lkankowski;
 
 #include <config.h>
 #include <common.h>
+
+Relay gRelay[gNumberOfRelays];
+RelayService gRelayService(gNumberOfRelays, gRelay, gRelayConfig);
 
 
 void setUp(void) {
@@ -104,17 +108,17 @@ void test_config_buttons() {
 
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
     int pin = gButtonConfig[buttonNum].buttonPin;
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].clickRelayId));
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     if (gButtonConfig[buttonNum].clickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].clickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
     }
     if (gButtonConfig[buttonNum].longClickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
     }
     if (gButtonConfig[buttonNum].doubleClickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     }
 
     TEST_ASSERT_GREATER_OR_EQUAL_MESSAGE(0,

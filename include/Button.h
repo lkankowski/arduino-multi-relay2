@@ -1,15 +1,6 @@
-#ifndef Button_h
-#define Button_h
+#pragma once
 
-#if defined(UNIX_HOST_DUINO_VERSION)
-  class Bounce {
-  public:
-    void interval(uint16_t interval_millis);
-    bool read();
-  };
-#else
-  #include <Bounce2.h>
-#endif
+#include <Bounce2.h>
 #include <stdint.h>
 
 #if defined(EXPANDER_PCF8574)
@@ -143,5 +134,3 @@ class Button {
 };
 
 } //namespace
-
-#endif
