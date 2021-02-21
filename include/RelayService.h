@@ -26,14 +26,15 @@ typedef struct {
 class RelayService {
 
   public:
-    explicit RelayService(const int, Relay *, const RelayConfigDef *);
+    RelayService(const int, Relay *, const RelayConfigDef *);
+    ~RelayService();
 
     void initialize(bool);
     bool changeState(int, bool);
     bool impulseProcess(int);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
     bool isImpulsePending() { return(_impulsePending > 0); };
-    void turnOffDependent();
+    bool turnOffDependent();
     int getRelayNum(int);
 
 
@@ -47,7 +48,7 @@ class RelayService {
     bool * _relayIsImpulse;
     unsigned long * _relayImpulseStartMillis;
     int * _relayDependsOn;
-    bool _isAnyDependent;
+    bool _isAnyDependentOn;
     bool * _isRelayDependent;
 };
 

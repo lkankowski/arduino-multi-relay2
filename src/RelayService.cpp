@@ -11,13 +11,23 @@ RelayService::RelayService(const int numberOfRelays, Relay * relays, const Relay
   , _relayConfig(relayConfig)
   , _impulsePending(0)
   , _impulseInterval(250)
-  , _isAnyDependent(false)
+  , _isAnyDependentOn(false)
 {
   _storeRelayToEEPROM = new bool[_numberOfRelays];
   _relayIsImpulse = new bool[_numberOfRelays];
   _relayImpulseStartMillis = new unsigned long[_numberOfRelays];
   _relayDependsOn = new int[_numberOfRelays];
   _isRelayDependent = new bool[_numberOfRelays];
+};
+
+
+RelayService::~RelayService()
+{
+  delete _storeRelayToEEPROM;
+  delete _relayIsImpulse;
+  delete _relayImpulseStartMillis;
+  delete _relayDependsOn;
+  delete _isRelayDependent;
 };
 
 
@@ -36,13 +46,15 @@ void RelayService::initialize(bool resetEepromState)
       // Set relay to last known state (using eeprom storage)
       initialState[relayNum] = EEPROM.read(RELAY_STATE_STORAGE + relayNum) == 1; // 1 - true, 0 - false
     }
-    if (resetEepromState && initialState[relayNum]) {
+    if (_storeRelayToEEPROM[relayNum] && resetEepromState && initialState[relayNum]) {
         EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);
         initialState[relayNum] = false;
     }
     _relayIsImpulse[relayNum] = (_relayConfig[relayNum].relayOptions & RELAY_IMPULSE) != 0;
     _relayImpulseStartMillis[relayNum] = 0UL;
-    _relayDependsOn[relayNum] = getRelayNum(_relayConfig[relayNum].dependsOn);
+    _relayDependsOn[relayNum] = (_relayConfig[relayNum].sensorId != _relayConfig[relayNum].dependsOn)
+                                ? getRelayNum(_relayConfig[relayNum].dependsOn)
+                                : -1;
     _isRelayDependent[relayNum] = false;
   }
   // startup turn on dependents
@@ -50,7 +62,7 @@ void RelayService::initialize(bool resetEepromState)
     if (_relayDependsOn[relayNum] != -1) {
       if ((_relayConfig[_relayDependsOn[relayNum]].relayOptions & RELAY_INDEPENDENT) == 0) {
         _isRelayDependent[_relayDependsOn[relayNum]] = true;
-        if (initialState[relayNum]) _isAnyDependent = true;
+        if (initialState[relayNum]) _isAnyDependentOn = true;
       }
       initialState[_relayDependsOn[relayNum]] = initialState[relayNum];
     }
@@ -66,7 +78,7 @@ bool RelayService::changeState(int relayNum, bool relayState)
 {
   if (relayState && (_relayDependsOn[relayNum] != -1)) {
     changeState(_relayDependsOn[relayNum], true);
-    _isAnyDependent = true;
+    _isAnyDependentOn = true;
   }
   bool stateHasChanged = _relays[relayNum].changeState(relayState);
 
@@ -102,22 +114,28 @@ bool RelayService::impulseProcess(int relayNum)
 };
 
 
-void RelayService::turnOffDependent()
+bool RelayService::turnOffDependent()
 {
-  if (_isAnyDependent) {
+  if (_isAnyDependentOn) {
+    _isAnyDependentOn = false;
     for (int relayNum = 0; relayNum < _numberOfRelays; relayNum++) {
       if (_isRelayDependent[relayNum] && _relays[relayNum].getState()) {
         bool allMasterTurnedOff = true;
-        for (int masterRelayNum = 0; relayNum < _numberOfRelays; relayNum++) {
-          if ((masterRelayNum != relayNum) && (_relayDependsOn[masterRelayNum] == relayNum) && ! _relays[masterRelayNum].getState()) {
+        for (int masterRelayNum = 0; masterRelayNum < _numberOfRelays; masterRelayNum++) {
+          if ((masterRelayNum != relayNum) && (_relayDependsOn[masterRelayNum] == relayNum) && _relays[masterRelayNum].getState()) {
             allMasterTurnedOff = false;
             break;
           }
         }
-        if (allMasterTurnedOff) changeState(relayNum, false);
+        if (allMasterTurnedOff) {
+          changeState(relayNum, false);
+        } else {
+          _isAnyDependentOn = true;
+        }
       }
     }
   }
+  return _isAnyDependentOn;
 };
 
 

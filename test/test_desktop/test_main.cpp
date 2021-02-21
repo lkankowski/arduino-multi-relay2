@@ -1,7 +1,7 @@
 #include <Arduino.h>
-//#ifdef ARDUINO_VERSION
-//#include "Arduino.h"
-//#endif
+#include <iostream>
+
+using namespace std;
 
 //#define USE_EXPANDER
 
@@ -55,12 +55,12 @@ Relay gRelay[gNumberOfRelays];
 RelayService gRelayService(gNumberOfRelays, gRelay, gRelayConfig);
 
 
-void setUp(void) {
-};
+void setUp(void)
+{};
 
 
-void test_config_relays() {
-
+void test_config_relays()
+{
   // check if relay ID is unique
   for (int relayNum = 0; relayNum < gNumberOfRelays-1; relayNum++) {
     for(int secondRelayNum = relayNum+1; secondRelayNum < gNumberOfRelays; secondRelayNum++) {
@@ -104,8 +104,8 @@ void test_config_relays() {
 };
 
 
-void test_config_buttons() {
-
+void test_config_buttons()
+{
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
     int pin = gButtonConfig[buttonNum].buttonPin;
     TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
@@ -151,11 +151,112 @@ void test_config_buttons() {
 };
 
 
-int main(int argc, char **argv) {
+void test_relay_dependsOn()
+{
+  const RelayConfigDef relayConfig[] = {
+    {1, 11, RELAY_TRIGGER_LOW, -1, "Lamp 1"},
+    {2, 12, RELAY_TRIGGER_LOW, 4,  "Lamp 2"},
+    {3, 13, RELAY_TRIGGER_LOW, 5,  "Lamp 3"},
+    {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
+    {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
+  };
+  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
+  Relay relays[numberOfRelays];
+  RelayService relayService(numberOfRelays, relays, relayConfig);
+  relayService.initialize(true);
+  relayService.changeState(1, true);
+  TEST_ASSERT_TRUE_MESSAGE(relays[1].getState(), "Lamp 2 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relays[3].getState(), "Power Supply should be ON after power ON Lamp 2");
+
+  bool isAnyDependentOn = relayService.turnOffDependent();
+  TEST_ASSERT_TRUE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return TRUE");
+
+  relayService.changeState(1, false);
+  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relays[3].getState(), "Power Supply should be ON after power OFF Lamp 2");
+
+  relayService.changeState(2, true);
+  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "Lamp 3 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON after power ON Lamp 3");
+
+  isAnyDependentOn = relayService.turnOffDependent();
+  TEST_ASSERT_FALSE_MESSAGE(relays[3].getState(), "Power Supply should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE");
+
+  // RELAY_INDEPENDENT
+  relayService.changeState(2, false);
+  TEST_ASSERT_FALSE_MESSAGE(relays[2].getState(), "Lamp 3 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON after power OFF Lamp 3");
+  isAnyDependentOn = relayService.turnOffDependent();
+  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON even after turnOffDependent()");
+  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE [2]");
+};
+
+
+void test_relay_startup_eeprom()
+{
+  const RelayConfigDef relayConfig[] = {
+    {1, 11, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON,  -1, "Lamp 1"},
+    {2, 12, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, -1, "Lamp 2"},
+    {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
+  };
+  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
+  
+  Relay * relays = new Relay[numberOfRelays];
+  RelayService * relayService = new RelayService(numberOfRelays, relays, relayConfig);
+  relayService->initialize(true); // reset eeprom
+  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[1] Lamp 1 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "[1] Lamp 2 should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(relays[2].getState(), "[1] Lamp 3 should be OFF");
+  
+  relayService->changeState(0, false);
+  relayService->changeState(1, true);
+  relayService->changeState(2, true);
+  TEST_ASSERT_FALSE_MESSAGE(relays[0].getState(), "[2] Lamp 1 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relays[1].getState(), "[2] Lamp 2 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "[2] Lamp 3 should be ON");
+
+  delete relayService;
+  delete relays;
+
+  long dummy = -1L;
+
+  Relay * relays2 = new Relay[numberOfRelays];
+  RelayService * relayService2 = new RelayService(numberOfRelays, relays2, relayConfig);
+  relayService2->initialize(false); // do not reset eeprom
+  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[3] Lamp 1 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "[3] Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "[3] Lamp 3 should be ON");
+
+
+  // startup and eeprom state at boot
+  // const uint8_t RELAY_STARTUP_ON   = 2;
+  // const uint8_t RELAY_STARTUP_OFF  = 4;
+  // const uint8_t RELAY_STARTUP_MASK = RELAY_STARTUP_ON | RELAY_STARTUP_OFF;
+  // RELAY_IMPULSE - also start OFF
+};
+
+
+void test_relay_impulse()
+{
+  //
+  //const uint8_t RELAY_IMPULSE      = 8;
+};
+
+//TODO: changeState() - test if state has changed
+//TODO: getRelayNum
+//TODO: RELAY_TRIGGER_LOW or RELAY_TRIGGER_HIGH
+
+
+int main(int argc, char **argv)
+{
     UNITY_BEGIN();
 
     RUN_TEST(test_config_relays);
     RUN_TEST(test_config_buttons);
+    RUN_TEST(test_relay_dependsOn);
+    RUN_TEST(test_relay_startup_eeprom);
+    RUN_TEST(test_relay_impulse);
 
     return UNITY_END();
 };
