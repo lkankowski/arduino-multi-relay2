@@ -71,16 +71,14 @@ class BounceExp : public Bounce {
       static void setExpander(Adafruit_MCP23017 * exp) { _expander = exp; };
     #endif
 
-    void attach(int pin, int mode){
-      setPinMode(pin, mode);
-      // it ensures we save pin as uint32_t
-      this->pin = pin;
+    void attach(int pin) {
+        this->pin = pin; // type changed from uint8_t to uint16_t
+        
+        // SET INITIAL STATE
+        begin();
+    };
 
-      // SET INITIAL STATE
-      begin();
-    }
-
-  private:
+  protected:
     bool readCurrentState() {
 
       int result;
@@ -115,17 +113,14 @@ class BounceExp : public Bounce {
         Bounce::setPinMode(_pin, mode);
       }
     }
-
+    
     #if defined(EXPANDER_PCF8574)
       static PCF8574 * _expander;
     #elif defined(EXPANDER_MCP23017)
       static Adafruit_MCP23017 * _expander;
     #endif
 
-  protected:
-    // https://github.com/thomasfredericks/Bounce2/blob/v2.55/src/Bounce2.h#L225
-    // use wider type range than uint8_t, when using expaders pin have higher values than 255
-    uint32_t pin;
+    uint16_t pin;
 };
 
 #endif
