@@ -71,9 +71,18 @@ class BounceExp : public Bounce {
       static void setExpander(Adafruit_MCP23017 * exp) { _expander = exp; };
     #endif
 
+    void attach(int pin, int mode){
+      setPinMode(pin, mode);
+      // it ensures we save pin as uint32_t
+      this->pin = pin;
+
+      // SET INITIAL STATE
+      begin();
+    }
+
   private:
     bool readCurrentState() {
-      
+
       int result;
       if (pin & 0xff00) { // expander
         int expanderNo = (pin >> 8) - 1;
@@ -84,13 +93,24 @@ class BounceExp : public Bounce {
       }
       return result;
     }
-    
+
     void setPinMode(int _pin, int mode) {
-      
+
       if (_pin & 0xff00) { // expander
         int expanderNo = (_pin >> 8) - 1;
         int expanderPin = _pin & 0xff;
-        _expander[expanderNo].pinMode(expanderPin, mode);
+        #if defined(EXPANDER_MCP23017)
+          // https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library/blob/1.2.0/Adafruit_MCP23017.cpp#L145
+          // pinMode method doesn't support INPUT_PULLUP, workaround below:
+          if (mode == INPUT_PULLUP) {
+            _expander[expanderNo].pinMode(expanderPin, INPUT);
+            _expander[expanderNo].pullUp(expanderPin, HIGH);
+          } else {
+            _expander[expanderNo].pinMode(expanderPin, mode);
+          }
+        #else
+           _expander[expanderNo].pinMode(expanderPin, mode);
+        #endif
       } else {
         Bounce::setPinMode(_pin, mode);
       }
@@ -101,6 +121,11 @@ class BounceExp : public Bounce {
     #elif defined(EXPANDER_MCP23017)
       static Adafruit_MCP23017 * _expander;
     #endif
+
+  protected:
+    // https://github.com/thomasfredericks/Bounce2/blob/v2.55/src/Bounce2.h#L225
+    // use wider type range than uint8_t, when using expaders pin have higher values than 255
+    uint32_t pin;
 };
 
 #endif

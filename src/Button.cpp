@@ -42,8 +42,6 @@ void lkankowski::Button::setAction(int clickRelayNum, int longclickRelayNum, int
 
 
 void lkankowski::Button::attachPin(int pin) {
-
-  // No Expander support for buttons (de-bouncing)
   _physicalButton.attach(pin, INPUT_PULLUP); // HIGH state when button is not pushed
 };
 
@@ -90,7 +88,7 @@ int lkankowski::Button::updateAndGetRelayNum() {
 
 
 bool lkankowski::Button::getRelayState(bool relayState) {
-  
+
   bool result;
   if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
     result = !relayState;
@@ -123,7 +121,7 @@ int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
         result = BUTTON_PRESSED;
       }
     }
-  
+
   // BI_STABLE buttons only state
   } else if (_eventState == BTN_STATE_1ST_CHANGE_BI) { // waiting for next change
     // waiting for second change or timeout
