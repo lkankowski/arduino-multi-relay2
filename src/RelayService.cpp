@@ -1,6 +1,4 @@
 #include <RelayService.h>
-#include <Arduino.h>
-#include <EEPROM.h>
 
 using namespace lkankowski;
 
@@ -44,10 +42,10 @@ void RelayService::initialize(bool resetEepromState)
     _storeRelayToEEPROM[relayNum] = (_relayConfig[relayNum].relayOptions & (RELAY_IMPULSE | RELAY_STARTUP_MASK)) == 0;
     if (_storeRelayToEEPROM[relayNum]) {
       // Set relay to last known state (using eeprom storage)
-      initialState[relayNum] = EEPROM.read(RELAY_STATE_STORAGE + relayNum) == 1; // 1 - true, 0 - false
+      initialState[relayNum] = _eeprom.read(RELAY_STATE_STORAGE + relayNum) == 1; // 1 - true, 0 - false
     }
     if (_storeRelayToEEPROM[relayNum] && resetEepromState && initialState[relayNum]) {
-        EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);
+        _eeprom.write(RELAY_STATE_STORAGE + relayNum, 0);
         initialState[relayNum] = false;
     }
     _relayIsImpulse[relayNum] = (_relayConfig[relayNum].relayOptions & RELAY_IMPULSE) != 0;
@@ -76,6 +74,12 @@ void RelayService::initialize(bool resetEepromState)
 
 bool RelayService::changeState(int relayNum, bool relayState)
 {
+  return changeState(relayNum, relayState, millis());
+};
+
+
+bool RelayService::changeState(int relayNum, bool relayState, unsigned long millis)
+{
   if (relayState && (_relayDependsOn[relayNum] != -1)) {
     changeState(_relayDependsOn[relayNum], true);
     _isAnyDependentOn = true;
@@ -83,12 +87,12 @@ bool RelayService::changeState(int relayNum, bool relayState)
   bool stateHasChanged = _relays[relayNum].changeState(relayState);
 
   if (_storeRelayToEEPROM[relayNum] && stateHasChanged) {
-    EEPROM.write(RELAY_STATE_STORAGE + relayNum, (uint8_t) relayState);
+    _eeprom.write(RELAY_STATE_STORAGE + relayNum, (uint8_t) relayState);
   }
 
   if (_relayIsImpulse[relayNum] && stateHasChanged) {
     if (relayState) {
-      _relayImpulseStartMillis[relayNum] = millis();
+      _relayImpulseStartMillis[relayNum] = millis;
       _impulsePending++;
     } else {
       _relayImpulseStartMillis[relayNum] = 0UL;
@@ -100,13 +104,12 @@ bool RelayService::changeState(int relayNum, bool relayState)
 };
 
 
-bool RelayService::impulseProcess(int relayNum)
+bool RelayService::impulseProcess(int relayNum, unsigned long millis)
 {
   if (_relayIsImpulse[relayNum] && _relayImpulseStartMillis[relayNum] > 0) {
-    unsigned long currentMillis = millis();
 
-    // the "|| (currentMillis < myRelayImpulseStart[i])" is for "millis()" overflow protection
-    if ((currentMillis > _relayImpulseStartMillis[relayNum]+_impulseInterval) || (currentMillis < _relayImpulseStartMillis[relayNum])) {
+    // the "|| (millis < myRelayImpulseStart[i])" is for "millis()" overflow protection
+    if ((millis > _relayImpulseStartMillis[relayNum]+_impulseInterval) || (millis < _relayImpulseStartMillis[relayNum])) {
       return(changeState(relayNum, false));
     }
   }
@@ -147,4 +150,17 @@ int RelayService::getRelayNum(int sensorId)
     }
   }
   return(-1);
-}
+};
+
+
+String RelayService::toString(int relayNum)
+{
+  Pin pin;
+  return String("# Relay ") + _relays[relayNum].getSensorId()
+          + ": state=" + _relays[relayNum].getState()
+          + ", pin_state=" + pin.digitalRead(_relayConfig[relayNum].relayPin)
+          + ", store_eeprom=" + _storeRelayToEEPROM[relayNum]
+          + ", eeprom=" + _eeprom.read(RELAY_STATE_STORAGE + relayNum)
+          + ", DependsOn=" + _relayDependsOn[relayNum]
+          + ", " + _relays[relayNum].getDescription();
+};

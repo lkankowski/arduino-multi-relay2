@@ -3,7 +3,6 @@
   ...mostly rewritten by Paul Stoffregen...
   Copyright (c) 2009-10 Hernando Barragan.  All rights reserved.
   Copyright 2011, Paul Stoffregen, paul@pjrc.com
-  Modified by Brian T. Park 2019.
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -70,7 +69,7 @@ String::String(unsigned char value, unsigned char base)
 {
 	init();
 	char buf[1 + 8 * sizeof(unsigned char)];
-	utoa(value, buf, base);
+	itoa(value, buf, base); //LK: utoa
 	*this = buf;
 }
 
@@ -86,7 +85,7 @@ String::String(unsigned int value, unsigned char base)
 {
 	init();
 	char buf[1 + 8 * sizeof(unsigned int)];
-	utoa(value, buf, base);
+	itoa(value, buf, base); //LK: utoa
 	*this = buf;
 }
 
@@ -102,27 +101,27 @@ String::String(unsigned long value, unsigned char base)
 {
 	init();
 	char buf[1 + 8 * sizeof(unsigned long)];
-	ultoa(value, buf, base);
+	itoa(value, buf, base);  //LK: ultoa
 	*this = buf;
 }
 
-String::String(float value, unsigned char decimalPlaces)
-{
-	init();
-	char buf[33];
-	*this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
-}
+// String::String(float value, unsigned char decimalPlaces)
+// {
+// 	init();
+// 	char buf[33];
+// 	*this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
+// }
 
-String::String(double value, unsigned char decimalPlaces)
-{
-	init();
-	char buf[33];
-	*this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
-}
+// String::String(double value, unsigned char decimalPlaces)
+// {
+// 	init();
+// 	char buf[33];
+// 	*this = dtostrf(value, (decimalPlaces + 2), decimalPlaces, buf);
+// }
 
 String::~String()
 {
-	free(buffer);
+	if (buffer) free(buffer);
 }
 
 /*********************************************/
@@ -179,16 +178,16 @@ String & String::copy(const char *cstr, unsigned int length)
 	return *this;
 }
 
-String & String::copy(const __FlashStringHelper *pstr, unsigned int length)
-{
-	if (!reserve(length)) {
-		invalidate();
-		return *this;
-	}
-	len = length;
-	strcpy_P(buffer, (PGM_P)pstr);
-	return *this;
-}
+// String & String::copy(const __FlashStringHelper *pstr, unsigned int length)
+// {
+// 	if (!reserve(length)) {
+// 		invalidate();
+// 		return *this;
+// 	}
+// 	len = length;
+// 	strcpy_P(buffer, (PGM_P)pstr);
+// 	return *this;
+// }
 
 #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 void String::move(String &rhs)
@@ -244,13 +243,13 @@ String & String::operator = (const char *cstr)
 	return *this;
 }
 
-String & String::operator = (const __FlashStringHelper *pstr)
-{
-	if (pstr) copy(pstr, strlen_P((PGM_P)pstr));
-	else invalidate();
+// String & String::operator = (const __FlashStringHelper *pstr)
+// {
+// 	if (pstr) copy(pstr, strlen_P((PGM_P)pstr));
+// 	else invalidate();
 
-	return *this;
-}
+// 	return *this;
+// }
 
 /*********************************************/
 /*  concat                                   */
@@ -303,7 +302,7 @@ unsigned char String::concat(int num)
 unsigned char String::concat(unsigned int num)
 {
 	char buf[1 + 3 * sizeof(unsigned int)];
-	utoa(num, buf, 10);
+	itoa(num, buf, 10);  //LK: utoa
 	return concat(buf, strlen(buf));
 }
 
@@ -317,35 +316,35 @@ unsigned char String::concat(long num)
 unsigned char String::concat(unsigned long num)
 {
 	char buf[1 + 3 * sizeof(unsigned long)];
-	ultoa(num, buf, 10);
+	itoa(num, buf, 10);  //LK: ultoa
 	return concat(buf, strlen(buf));
 }
 
-unsigned char String::concat(float num)
-{
-	char buf[20];
-	char* string = dtostrf(num, 4, 2, buf);
-	return concat(string, strlen(string));
-}
+// unsigned char String::concat(float num)
+// {
+// 	char buf[20];
+// 	char* string = dtostrf(num, 4, 2, buf);
+// 	return concat(string, strlen(string));
+// }
 
-unsigned char String::concat(double num)
-{
-	char buf[20];
-	char* string = dtostrf(num, 4, 2, buf);
-	return concat(string, strlen(string));
-}
+// unsigned char String::concat(double num)
+// {
+// 	char buf[20];
+// 	char* string = dtostrf(num, 4, 2, buf);
+// 	return concat(string, strlen(string));
+// }
 
-unsigned char String::concat(const __FlashStringHelper * str)
-{
-	if (!str) return 0;
-	int length = strlen_P((const char *) str);
-	if (length == 0) return 1;
-	unsigned int newlen = len + length;
-	if (!reserve(newlen)) return 0;
-	strcpy_P(buffer + len, (const char *) str);
-	len = newlen;
-	return 1;
-}
+// unsigned char String::concat(const __FlashStringHelper * str)
+// {
+// 	if (!str) return 0;
+// 	int length = strlen_P((const char *) str);
+// 	if (length == 0) return 1;
+// 	unsigned int newlen = len + length;
+// 	if (!reserve(newlen)) return 0;
+// 	strcpy_P(buffer + len, (const char *) str);
+// 	len = newlen;
+// 	return 1;
+// }
 
 /*********************************************/
 /*  Concatenate                              */
@@ -407,26 +406,26 @@ StringSumHelper & operator + (const StringSumHelper &lhs, unsigned long num)
 	return a;
 }
 
-StringSumHelper & operator + (const StringSumHelper &lhs, float num)
-{
-	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
-	if (!a.concat(num)) a.invalidate();
-	return a;
-}
+// StringSumHelper & operator + (const StringSumHelper &lhs, float num)
+// {
+// 	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
+// 	if (!a.concat(num)) a.invalidate();
+// 	return a;
+// }
 
-StringSumHelper & operator + (const StringSumHelper &lhs, double num)
-{
-	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
-	if (!a.concat(num)) a.invalidate();
-	return a;
-}
+// StringSumHelper & operator + (const StringSumHelper &lhs, double num)
+// {
+// 	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
+// 	if (!a.concat(num)) a.invalidate();
+// 	return a;
+// }
 
-StringSumHelper & operator + (const StringSumHelper &lhs, const __FlashStringHelper *rhs)
-{
-	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
-	if (!a.concat(rhs))	a.invalidate();
-	return a;
-}
+// StringSumHelper & operator + (const StringSumHelper &lhs, const __FlashStringHelper *rhs)
+// {
+// 	StringSumHelper &a = const_cast<StringSumHelper&>(lhs);
+// 	if (!a.concat(rhs))	a.invalidate();
+// 	return a;
+// }
 
 /*********************************************/
 /*  Comparison                               */

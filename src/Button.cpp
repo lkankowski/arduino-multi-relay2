@@ -1,4 +1,5 @@
 #include <Button.h>
+//#include <iostream>
 
 using namespace lkankowski;
 
@@ -8,9 +9,9 @@ unsigned long lkankowski::Button::_longclickInterval = 800;
 uint8_t lkankowski::Button::_monoStableTrigger = 0;
 
 #if defined(EXPANDER_PCF8574)
-  PCF8574 * BounceExp::_expander = NULL;
+  PCF8574 * Debounce::_expander = NULL;
 #elif defined(EXPANDER_MCP23017)
-  Adafruit_MCP23017 * BounceExp::_expander = NULL;
+  Adafruit_MCP23017 * Debounce::_expander = NULL;
 #endif
 
 
@@ -46,39 +47,48 @@ void lkankowski::Button::attachPin(int pin) {
 };
 
 
+// static
 void lkankowski::Button::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval) {
   _doubleclickInterval = doubleclickInterval;
   _longclickInterval = longclickInterval;
 };
 
 
+// static
 void lkankowski::Button::setMonoStableTrigger(unsigned char monoStableTrigger) {
   _monoStableTrigger = monoStableTrigger;
 };
 
 
-int lkankowski::Button::updateAndGetRelayNum() {
+int lkankowski::Button::updateAndGetRelayNum(unsigned long millis) {
 
   bool isPinChanged = _physicalButton.update();
   int buttonPinState = _physicalButton.read();
 
-  int buttonAction = getEvent(isPinChanged, buttonPinState);
+  int buttonAction = getEvent(isPinChanged, buttonPinState, millis);
+//  std::cout << "updateAndGetRelayNum: " << isPinChanged << ", " << buttonPinState << ", " << _eventState << ", " << buttonAction << std::endl;
 
   int relayNum = -1;
-  if (isPinChanged && ((_type == DING_DONG) || (_type == REED_SWITCH))) {
-      relayNum = _clickRelayNum;
+  if ((_type == DING_DONG) || (_type == REED_SWITCH)) {
+      if (isPinChanged) {
+        relayNum = _clickRelayNum;
+        // std::cout << "DING_DONG/REED_SWITCH!" << std::endl;
+      }
   } else if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
+    // std::cout << "CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
       Serial.println(String(_description) + " - Click for relay " + relayNum);
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
+    // std::cout << "DOUBLE-CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
       Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
+    // std::cout << "LONG-PRESS!" << std::endl;
     #ifdef DEBUG_ACTION
       Serial.println(String(_description) + " - LongPress for relay " + relayNum);
     #endif
@@ -93,23 +103,21 @@ bool lkankowski::Button::getRelayState(bool relayState) {
   if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
     result = !relayState;
   } else if (_type == DING_DONG) {
-    result = _physicalButton.read();
+    result = ! _physicalButton.read(); // TODO: should not be physical state
   } else if (_type == REED_SWITCH) {
-    result = ! _physicalButton.read();
+    result = _physicalButton.read();   // TODO: should not be physical state
   }
   return(result);
 };
 
 
-int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
+int lkankowski::Button::getEvent(bool isPinChanged, int pinState, unsigned long now) {
 
   int result = BUTTON_NO_EVENT;
   int activeLevel = pinState == (_type == REED_SWITCH ? ! _stateForPressed : _stateForPressed);
 
   bool hasLongClick = _longclickRelayNum != -1;
   bool hasDoubleClick = _doubleclickRelayNum != -1;
-
-  unsigned long now = millis();
 
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
     if (isPinChanged) {

@@ -60,6 +60,7 @@ MyMessage myMessage; // MySensors - Sending Data
 
 #include <common.h>
 
+Pin pin;
 Relay gRelay[gNumberOfRelays];
 RelayService gRelayService(gNumberOfRelays, gRelay, gRelayConfig);
 lkankowski::Button gButton[gNumberOfButtons];
@@ -68,7 +69,8 @@ void(* resetFunc) (void) = 0; //declare reset function at address 0
 
 
 // MySensors - This will execute before MySensors starts up
-void before() {
+void before()
+{
   Serial.begin(115200);
 
   #ifdef DEBUG_STARTUP
@@ -180,7 +182,8 @@ void before() {
 
 
 // executed AFTER mysensors has been initialised
-void setup() {
+void setup()
+{
   // Send state to MySensor Gateway
   myMessage.setType(V_STATUS);
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
@@ -203,18 +206,29 @@ void setup() {
   }
 };
 
-void loop() {
+void loop()
+{
+  unsigned long loopStartMillis = millis();
+
   #ifdef DEBUG_STATS
-    unsigned long loopStartMillis = millis();
     if (loopCounter == 0) {
       loopCumulativeMillis = 0;
       loopInterval = loopStartMillis;
     }
   #endif
 
+  if (gRelayService.isImpulsePending()) {
+    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+      if (gRelayService.impulseProcess(relayNum, loopStartMillis)) {
+        myMessage.setSensor(gRelay[relayNum].getSensorId());
+        send(myMessage.set(0));
+      }
+    }
+  }
+
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
     
-    int relayNum = gButton[buttonNum].updateAndGetRelayNum();
+    int relayNum = gButton[buttonNum].updateAndGetRelayNum(loopStartMillis);
     if (relayNum > -1) {
       // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
       bool relayState = gButton[buttonNum].getRelayState(gRelay[relayNum].getState());
@@ -231,20 +245,6 @@ void loop() {
       #endif
     }
   }
-  
-  if (gRelayService.isImpulsePending()) {
-    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-      if (gRelayService.impulseProcess(relayNum)) {
-        myMessage.setSensor(gRelay[relayNum].getSensorId());
-        send(myMessage.set(0));
-      }
-    }
-  }
-
-  if (--gTurnOffDependentsCounter <= 0) {
-    gRelayService.turnOffDependent();
-    gTurnOffDependentsCounter = 500;
-  }
 
   #ifdef DEBUG_STATS
     if (debugStatsOn) {
@@ -259,12 +259,33 @@ void loop() {
       }
     }
   #endif
+  
+  if (--gTurnOffDependentsCounter <= 0) {
+    gRelayService.turnOffDependent();
+    gTurnOffDependentsCounter = 500;
+
+    // debug feature
+    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+      if ((gRelayConfig[relayNum].relayPin >= 0) &&
+          (gRelay[relayNum].getState() != (pin.digitalRead(gRelayConfig[relayNum].relayPin) == LOW))) {
+        Serial.println(String("# Error state relay ") + gRelay[relayNum].getSensorId() + ": state=" + gRelay[relayNum].getState()
+                       + ", pin_state=" + pin.digitalRead(gRelayConfig[relayNum].relayPin));
+      }
+      if (((gRelayConfig[relayNum].relayOptions & RELAY_STARTUP_MASK) == 0) &&
+          (gRelay[relayNum].getState() != (EEPROM.read(RELAY_STATE_STORAGE + relayNum) == 1)))
+      {
+        Serial.println(String("# Error eeprom relay ") + gRelay[relayNum].getSensorId() + ": state=" + gRelay[relayNum].getState()
+                       + ", eeprom=" + EEPROM.read(RELAY_STATE_STORAGE + relayNum));
+      }
+    }
+  }
 };
 
 
 // MySensors - Presentation - Your sensor must first present itself to the controller.
 // Executed after "before()" and before "setup()"
-void presentation() {
+void presentation()
+{
   sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
   
   // Register every relay as separate sensor
@@ -276,8 +297,8 @@ void presentation() {
 
 // MySensors - Handling incoming messages
 // Nodes that expects incoming data, must implement the receive() function to handle the incoming messages.
-void receive(const MyMessage &message) {
-
+void receive(const MyMessage &message)
+{
   #ifdef DEBUG_COMMUNICATION
     Serial.println(String("# Incoming message: sensorId=") + message.getSensor() + ", command=" + message.getCommand()
                  + ", ack=" + message.isAck() + ", echo=" + message.isEcho() + ", type=" + message.getType()
@@ -294,13 +315,13 @@ void receive(const MyMessage &message) {
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
       if (debugCommand == 1) {
-        debugStatsOn = message.getBool();
+        debugStatsOn = true;
         loopCounter = 0;
         send(debugMessage.set("toogle debug stats"));
+        gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
       } else if (debugCommand == 2) {
         for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-          Serial.println(String("# Sensor ") + gRelay[relayNum].getSensorId() + " state="
-                         + gRelay[relayNum].getState() + "; " + gRelay[relayNum].getDescription());
+          Serial.println(gRelayService.toString(relayNum));
         }
       } else if (debugCommand == 3) {
         for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
@@ -327,6 +348,7 @@ void receive(const MyMessage &message) {
 };
 
 #else
+unsigned long millisForBounce2 = 0UL;
 int main( int argc, char **argv) {};
 #endif
 #endif

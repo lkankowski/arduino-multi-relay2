@@ -3,7 +3,6 @@
   ...mostly rewritten by Paul Stoffregen...
   Copyright (c) 2009-10 Hernando Barragan.  All right reserved.
   Copyright 2011, Paul Stoffregen, paul@pjrc.com
-  Modified 2019, Brian T. Park
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,21 +19,23 @@
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-#ifndef EPOXY_DUINO_STRING_H
-#define EPOXY_DUINO_STRING_H
+#ifndef String_class_h
+#define String_class_h
 #ifdef __cplusplus
 
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "pgmspace.h"
-#include "avr_stdlib.h"
+//#include <avr/pgmspace.h>
 
-// Macros for creating and using c-strings in PROGMEM.
-// FPSTR() is defined for ESP8266 and ESP32 Cores, but not AVR or SAMD Cores.
+// When compiling programs with this class, the following gcc parameters
+// dramatically increase performance and memory (RAM) efficiency, typically
+// with little or no increase in code size.
+//     -felide-constructors
+//     -std=c++0x
+
 class __FlashStringHelper;
-#define FPSTR(p) (reinterpret_cast<const __FlashStringHelper *>(p))
-#define F(s) FPSTR(PSTR(s))
+#define F(string_literal) (reinterpret_cast<const __FlashStringHelper *>(PSTR(string_literal)))
 
 // An inherited class for holding the result of a concatenation.  These
 // result objects are assumed to be writable by subsequent concatenations.
@@ -68,8 +69,8 @@ public:
 	explicit String(unsigned int, unsigned char base=10);
 	explicit String(long, unsigned char base=10);
 	explicit String(unsigned long, unsigned char base=10);
-	explicit String(float, unsigned char decimalPlaces=2);
-	explicit String(double, unsigned char decimalPlaces=2);
+	//explicit String(float, unsigned char decimalPlaces=2);
+	//explicit String(double, unsigned char decimalPlaces=2);
 	~String(void);
 
 	// memory management
@@ -84,7 +85,7 @@ public:
 	// marked as invalid ("if (s)" will be false).
 	String & operator = (const String &rhs);
 	String & operator = (const char *cstr);
-	String & operator = (const __FlashStringHelper *str);
+	//String & operator = (const __FlashStringHelper *str);
        #if __cplusplus >= 201103L || defined(__GXX_EXPERIMENTAL_CXX0X__)
 	String & operator = (String &&rval);
 	String & operator = (StringSumHelper &&rval);
@@ -103,9 +104,9 @@ public:
 	unsigned char concat(unsigned int num);
 	unsigned char concat(long num);
 	unsigned char concat(unsigned long num);
-	unsigned char concat(float num);
-	unsigned char concat(double num);
-	unsigned char concat(const __FlashStringHelper * str);
+	//unsigned char concat(float num);
+	//unsigned char concat(double num);
+	//unsigned char concat(const __FlashStringHelper * str);
 
 	// if there's not enough memory for the concatenated value, the string
 	// will be left unchanged (but this isn't signalled in any way)
@@ -117,9 +118,9 @@ public:
 	String & operator += (unsigned int num)		{concat(num); return (*this);}
 	String & operator += (long num)			{concat(num); return (*this);}
 	String & operator += (unsigned long num)	{concat(num); return (*this);}
-	String & operator += (float num)		{concat(num); return (*this);}
-	String & operator += (double num)		{concat(num); return (*this);}
-	String & operator += (const __FlashStringHelper *str){concat(str); return (*this);}
+	//String & operator += (float num)		{concat(num); return (*this);}
+	//String & operator += (double num)		{concat(num); return (*this);}
+	//String & operator += (const __FlashStringHelper *str){concat(str); return (*this);}
 
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, const String &rhs);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, const char *cstr);
@@ -129,9 +130,9 @@ public:
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, unsigned int num);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, long num);
 	friend StringSumHelper & operator + (const StringSumHelper &lhs, unsigned long num);
-	friend StringSumHelper & operator + (const StringSumHelper &lhs, float num);
-	friend StringSumHelper & operator + (const StringSumHelper &lhs, double num);
-	friend StringSumHelper & operator + (const StringSumHelper &lhs, const __FlashStringHelper *rhs);
+	//friend StringSumHelper & operator + (const StringSumHelper &lhs, float num);
+	//friend StringSumHelper & operator + (const StringSumHelper &lhs, double num);
+	//friend StringSumHelper & operator + (const StringSumHelper &lhs, const __FlashStringHelper *rhs);
 
 	// comparison (only works w/ Strings and "strings")
 	operator StringIfHelperType() const { return buffer ? &String::StringIfHelper : 0; }
@@ -220,9 +221,9 @@ public:
 	StringSumHelper(unsigned int num) : String(num) {}
 	StringSumHelper(long num) : String(num) {}
 	StringSumHelper(unsigned long num) : String(num) {}
-	StringSumHelper(float num) : String(num) {}
-	StringSumHelper(double num) : String(num) {}
+	//StringSumHelper(float num) : String(num) {}
+	//StringSumHelper(double num) : String(num) {}
 };
 
 #endif  // __cplusplus
-#endif  // EPOXY_DUINO_STRING_H
+#endif  // String_class_h

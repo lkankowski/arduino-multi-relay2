@@ -1,7 +1,6 @@
-#ifndef Relay_h
-#define Relay_h
+#pragma once
 
-#include <stdint.h>
+#include <ArduinoAbstract.h>
 
 #if defined(EXPANDER_PCF8574)
   #include "PCF8574.h"
@@ -33,6 +32,7 @@ class Relay {
 
   private:
     int _pin;
+    Pin _pinObj;
     bool _state; // true/false = ON/OFF
     int _sensorId;
     const char * _description;
@@ -45,5 +45,3 @@ class Relay {
 };
 
 } //namespace
-
-#endif

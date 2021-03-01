@@ -1,5 +1,4 @@
 #include <Relay.h>
-#include <Arduino.h>
 
 using namespace lkankowski;
 
@@ -20,7 +19,7 @@ Relay::Relay()
     : _pin(0)
     , _state(false)
     , _sensorId(0)
-    , _description(NULL)
+    // , _description(NULL)
     , _triggerState(0)
 {};
 
@@ -43,7 +42,7 @@ void Relay::attachPin(int pin) {
         _expander[expanderNo].pinMode(expanderPin, OUTPUT);
       } else {
     #endif
-        pinMode(pin, OUTPUT);
+        _pinObj.pinMode(pin, OUTPUT);
     #ifdef USE_EXPANDER
       }
     #endif
@@ -54,8 +53,8 @@ bool Relay::changeState(bool state) {
 
     #ifdef DEBUG_STARTUP
       Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
-                     +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex
-                     +", (uint8_t) state="+((uint8_t) state)+", _isImpulse="+_isImpulse);
+      //               +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex +", _isImpulse="+_isImpulse
+                     +", (uint8_t) state="+((uint8_t) state));
     #endif
     bool stateHasChanged = state != _state;
     uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
@@ -67,7 +66,7 @@ bool Relay::changeState(bool state) {
         _expander[expanderNo].digitalWrite(expanderPin, digitalOutState);
       } else {
     #endif
-        digitalWrite(_pin, digitalOutState);
+        _pinObj.digitalWrite(_pin, digitalOutState);
     #ifdef USE_EXPANDER
       }
     #endif

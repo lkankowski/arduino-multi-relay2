@@ -1,3 +1,5 @@
 {
+  "name": "Bounce2Mock",
+  "description": "Bounce2 mock for native platform",
   "platforms": "native"
 }

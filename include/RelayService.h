@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Relay.h>
+#include <ArduinoAbstract.h>
+#include <EepromAbstract.h>
 
 namespace lkankowski {
 
@@ -31,11 +33,13 @@ class RelayService {
 
     void initialize(bool);
     bool changeState(int, bool);
-    bool impulseProcess(int);
+    bool changeState(int, bool, unsigned long);
+    bool impulseProcess(int, unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
     bool isImpulsePending() { return(_impulsePending > 0); };
     bool turnOffDependent();
     int getRelayNum(int);
+    String toString(int);
 
 
   private:
@@ -43,6 +47,7 @@ class RelayService {
     Relay * _relays;
     const RelayConfigDef * _relayConfig;
     bool * _storeRelayToEEPROM;
+    Eeprom _eeprom;
     int _impulsePending;
     unsigned long _impulseInterval;
     bool * _relayIsImpulse;

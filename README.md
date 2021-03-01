@@ -11,7 +11,8 @@ Copy file "config.h.sample" into "config.h". There is sample configuration you n
 
 ## Build
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
-By default sketch is build for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
+By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
+Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
 
 # Configuration
 
@@ -43,8 +44,8 @@ Params description:
   * DING_DONG - doorbell button, relay is triggered only when button is pushed
   * REED_SWITCH - door/window sensor, oposite to DING_DONG - state LOW when door/window is closed, HIGH when opened
 * click relay id - sensor id used in relay configuration
-* long-click relay id - sensor id used in relay configuration, -1 when not used
-* double-click relay id - sensor id used in relay configuration, -1 when not used
+* long-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
+* double-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
 * button description - debug only information
 
 ## Additional config
