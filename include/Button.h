@@ -71,11 +71,18 @@ class BounceExp : public Bounce {
       static void setExpander(Adafruit_MCP23017 * exp) { _expander = exp; };
     #endif
 
-    void attach(int pin) {
-        this->pin = pin; // type changed from uint8_t to uint16_t
-        
-        // SET INITIAL STATE
-        begin();
+    void attach(int pin)
+    {
+      this->pin = pin; // type changed from uint8_t to uint16_t
+      
+      // SET INITIAL STATE
+      begin();
+    };
+
+    void attach(int pin, int mode)
+    {
+      setPinMode(pin, mode);
+      this->attach(pin);
     };
 
   protected:
