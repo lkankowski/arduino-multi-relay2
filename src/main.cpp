@@ -59,11 +59,15 @@ lkankowski::Button gButton[gNumberOfButtons];
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
 
+FILE serial_stdout;
 
 // MySensors - This will execute before MySensors starts up
 void before() {
   Serial.begin(115200);
 
+   // Set up redirect of stdout to serial
+   fdev_setup_stream(&serial_stdout, serial_putchar, NULL, _FDEV_SETUP_WRITE);
+   stdout = &serial_stdout;
   #ifdef DEBUG_STARTUP
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - common config: MONO_STABLE_TRIGGER="+MONO_STABLE_TRIGGER
                    +", RELAY_IMPULSE_INTERVAL="+RELAY_IMPULSE_INTERVAL+", BUTTON_DEBOUNCE_INTERVAL="+BUTTON_DEBOUNCE_INTERVAL
