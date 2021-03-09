@@ -46,7 +46,7 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
 #ifdef DEBUG_STARTUP
   unsigned long debugCounter = 0;
 #endif
-  
+
 MyMessage myMessage; // MySensors - Sending Data
 #if defined(DEBUG_COMMUNICATION) || defined(DEBUG_STATS)
   MyMessage debugMessage(255, V_TEXT);
@@ -86,14 +86,23 @@ void before() {
 
     printf_P(PSTR("# %lu Debug startup - relay config\n"), debugCounter++);
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-      Serial.println(String("# ")+(debugCounter++)+" > "+gRelayConfig[relayNum].sensorId+";"+gRelayConfig[relayNum].relayPin+";"
-                     +gRelayConfig[relayNum].relayOptions+";"+gRelayConfig[relayNum].relayDescription);
+      RelayConfigDef relayConfig = {};
+      PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
+      printf_P(
+        PSTR("# %lu > %i;%i;%i;%s;\n"), debugCounter++, relayConfig.sensorId,
+        relayConfig.relayPin, relayConfig.relayOptions, relayConfig.relayDescription
+      );
+
     }
     printf_P(PSTR("# %lu Debug startup - button config\n"), debugCounter++);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      Serial.println(String("# ")+(debugCounter++)+" > "+gButtonConfig[buttonNum].buttonPin+";"+gButtonConfig[buttonNum].buttonType+";"
-                     +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
-                     +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
+      ButtonConfigDef buttonConfig = {};
+      PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+      printf_P(
+        PSTR("# %lu > %i;%i;%i;%i;%i;%s;\n"), debugCounter++, buttonConfig.buttonPin,
+        buttonConfig.buttonType, buttonConfig.clickRelayId, buttonConfig.longClickRelayId,
+        buttonConfig.doubleClickRelayId, buttonConfig.buttonDescription
+      );
     }
     printf_P(PSTR("# %lu Debug startup - EEPROM (first value is version, relay state starts at %i\n"), debugCounter++, RELAY_STATE_STORAGE);
     printf_P(PSTR("# %lu > "), debugCounter++);
@@ -142,9 +151,12 @@ void before() {
     #endif
     const char * failAction[] = {"OK", "click", "long-press", "double-click"};
     int fail = 0;
-    if ((gButtonConfig[buttonNum].clickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].clickRelayId) == -1)) fail = 1;
-    if ((gButtonConfig[buttonNum].longClickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].longClickRelayId) == -1)) fail = 2;
-    if ((gButtonConfig[buttonNum].doubleClickRelayId != -1) && (getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId) == -1)) fail = 3;
+    ButtonConfigDef buttonConfig = {};
+    PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+
+    if ((buttonConfig.clickRelayId != -1) && (getRelayNum(buttonConfig.clickRelayId) == -1)) fail = 1;
+    if ((buttonConfig.longClickRelayId != -1) && (getRelayNum(buttonConfig.longClickRelayId) == -1)) fail = 2;
+    if ((buttonConfig.doubleClickRelayId != -1) && (getRelayNum(buttonConfig.doubleClickRelayId) == -1)) fail = 3;
     if (fail) {
         printf_P(PSTR("Configuration failed - invalid '%s relay ID' for button: %i\n"), failAction[fail], buttonNum);
         delay(1000);
@@ -170,10 +182,12 @@ void before() {
   Relay::setImpulseInterval(RELAY_IMPULSE_INTERVAL);
 
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    
-    gRelay[relayNum].initialize(relayNum, gRelayConfig[relayNum].sensorId, gRelayConfig[relayNum].relayDescription);
-    gRelay[relayNum].attachPin(gRelayConfig[relayNum].relayPin);
-    gRelay[relayNum].setModeAndStartupState(gRelayConfig[relayNum].relayOptions, versionChangeResetState);
+    RelayConfigDef relayConfig = {};
+    PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
+
+    gRelay[relayNum].initialize(relayNum, relayConfig.sensorId, relayConfig.relayDescription);
+    gRelay[relayNum].attachPin(relayConfig.relayPin);
+    gRelay[relayNum].setModeAndStartupState(relayConfig.relayOptions, versionChangeResetState);
     gRelay[relayNum].start();
   }
   if (versionChangeResetState) {
@@ -196,13 +210,15 @@ void setup() {
   lkankowski::Button::Button::setMonoStableTrigger(MONO_STABLE_TRIGGER);
 
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-    
-    gButton[buttonNum].initialize(gButtonConfig[buttonNum].buttonType, gButtonConfig[buttonNum].buttonDescription);
-    gButton[buttonNum].setAction(getRelayNum(gButtonConfig[buttonNum].clickRelayId),
-                                 getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                                 getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    ButtonConfigDef buttonConfig = {};
+    PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+
+    gButton[buttonNum].initialize(buttonConfig.buttonType, buttonConfig.buttonDescription);
+    gButton[buttonNum].setAction(getRelayNum(buttonConfig.clickRelayId),
+                                 getRelayNum(buttonConfig.longClickRelayId),
+                                 getRelayNum(buttonConfig.doubleClickRelayId));
     gButton[buttonNum].setDebounceInterval(BUTTON_DEBOUNCE_INTERVAL);
-    gButton[buttonNum].attachPin(gButtonConfig[buttonNum].buttonPin);
+    gButton[buttonNum].attachPin(buttonConfig.buttonPin);
   }
 };
 
