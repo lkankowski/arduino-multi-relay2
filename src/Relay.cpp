@@ -86,9 +86,6 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
 bool Relay::changeState(bool state) {
 
     #ifdef DEBUG_STARTUP
-      // Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
-      //                +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex
-      //                +", (uint8_t) state="+((uint8_t) state)+", _isImpulse="+_isImpulse);
       printf_P(
         PSTR("# %lu:%lu Relay::changeState: old_state=%d, new_state=%d, _hasStartupOverride=%d, _eepromIndex=%i, (uint8_t) state=%d, _isImpulse=%d\n"),
         debugCounter++, millis(), _state, state, _hasStartupOverride, _eepromIndex, (uint8_t) state, _isImpulse

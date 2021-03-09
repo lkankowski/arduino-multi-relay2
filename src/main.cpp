@@ -78,10 +78,9 @@ void before() {
     #ifdef USE_EXPANDER
       printf_P(PSTR("# %lu Debug startup - expander config\n"), debugCounter++);
       for(int i = 0; i < gNumberOfExpanders; i++) {
-        Serial.print(expanderAddresses[i]);
-        Serial.print(F(","));
+        printf("%i,",expanderAddresses[i]);
       }
-      Serial.println();
+      printf("\n");
     #endif
 
     printf_P(PSTR("# %lu Debug startup - relay config\n"), debugCounter++);
@@ -107,10 +106,9 @@ void before() {
     printf_P(PSTR("# %lu Debug startup - EEPROM (first value is version, relay state starts at %i\n"), debugCounter++, RELAY_STATE_STORAGE);
     printf_P(PSTR("# %lu > "), debugCounter++);
     for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
-      Serial.print(EEPROM.read(relayNum));
-      Serial.print(F(","));
+      printf("%i,", EEPROM.read(relayNum));
     }
-    Serial.println();
+    printf("\n");
     printf_P(PSTR("# %lu Debug startup - buttons pin state\n"), debugCounter++);
     printf_P(PSTR("# %lu > "), debugCounter++);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
@@ -118,10 +116,9 @@ void before() {
     }
     delay(200);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      Serial.print(digitalRead(gButtonConfig[buttonNum].buttonPin));
-      Serial.print(F(","));
+      printf("%i,",digitalRead(gButtonConfig[buttonNum].buttonPin));
     }
-    Serial.println();
+    printf("\n");
   #endif
 
   // validate config
@@ -266,9 +263,9 @@ void loop() {
       loopCumulativeMillis += loopIntervalCurrent - loopStartMillis;
       loopCounter++;
       if ( loopCounter > DEBUG_STATS) {
-        printf(
-          ("# %i loop stats: (end-start)=%lums, cumulative_loop_millis=%lums\n"),
-          DEBUG_STATS,  (loopIntervalCurrent - loopInterval), loopCumulativeMillis
+        printf_P(
+          PSTR("# %i loop stats: (end-start)=%lums, cumulative_loop_millis=%lums\n"),
+          DEBUG_STATS, (loopIntervalCurrent - loopInterval), loopCumulativeMillis
         );
 
         loopCounter = 0;
@@ -327,12 +324,11 @@ void receive(const MyMessage &message) {
           printf_P(PSTR("# Button %i: %s\n"), buttonNum, gButton[buttonNum]);
         }
       } else if (debugCommand == 4) { // dump EEPROM
-        Serial.print(F("# Dump EEPROM: "));
+        printf_P(PSTR("# Dump EEPROM: "));
         for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
-          Serial.print(EEPROM.read(relayNum));
-          Serial.print(F(","));
+          printf("%i,",EEPROM.read(relayNum));
         }
-        Serial.println();
+        printf("\n");
       } else if (debugCommand == 5) { // clear EEPROM & reset
         for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
           EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);

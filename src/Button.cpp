@@ -70,19 +70,16 @@ int lkankowski::Button::updateAndGetRelayNum() {
   } else if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
     #ifdef DEBUG_ACTION
-      // Serial.println(String(_description) + " - Click for relay " + relayNum);
       printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
     #ifdef DEBUG_ACTION
-      // Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
       printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
     #ifdef DEBUG_ACTION
-      // Serial.println(String(_description) + " - LongPress for relay " + relayNum);
       printf_P(PSTR("%s - LongPress for relay %i"), _description, relayNum);
     #endif
   }
