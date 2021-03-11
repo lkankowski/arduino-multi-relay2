@@ -3,6 +3,7 @@
 #include <Relay.h>
 #include <RelayService.h>
 #include <Button.h>
+#include <ButtonService.h>
 #include <unity.h>
 #include <iostream>
 #include <string>
@@ -15,24 +16,25 @@ using namespace lkankowski;
 
 
 #include <config.h>
-#include <common.h>
 
-Relay gRelay[gNumberOfRelays];
-RelayService gRelayService(gNumberOfRelays, gRelay, gRelayConfig);
-unsigned long millisForBounce2 = 0UL;
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+
+Eeprom gEeprom;
+RelayService gRelayService(gRelayConfigRef, gEeprom);
 
 
 void setUp(void)
 {
-  Button::setEventIntervals(350, 800);
+  ButtonInterface::setEventIntervals(350, 800);
 };
 
 
 void test_config_relays()
 {
+  const int numberOfRelays = sizeof(gRelayConfig) / sizeof(RelayConfigDef);
   // check if relay ID is unique
-  for (int relayNum = 0; relayNum < gNumberOfRelays-1; relayNum++) {
-    for(int secondRelayNum = relayNum+1; secondRelayNum < gNumberOfRelays; secondRelayNum++) {
+  for (int relayNum = 0; relayNum < numberOfRelays-1; relayNum++) {
+    for(int secondRelayNum = relayNum+1; secondRelayNum < numberOfRelays; secondRelayNum++) {
 //      Serial.println(string(gRelayConfig[relayNum].sensorId) + "==" + gRelayConfig[secondRelayNum].sensorId);
       TEST_ASSERT_NOT_EQUAL_MESSAGE(gRelayConfig[relayNum].sensorId,
                                     gRelayConfig[secondRelayNum].sensorId,
@@ -41,7 +43,7 @@ void test_config_relays()
   }
   // validate if pin is correct to the current board
   #if defined(BOARD_TARGET_ATMEGA2560)
-    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+    for (int relayNum = 0; relayNum < numberOfRelays; relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin >= 0) { // exclude virtual relays
         if (pin & 0xff00) { //exclude expander pins
@@ -75,7 +77,9 @@ void test_config_relays()
 
 void test_config_buttons()
 {
-  for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+  const int numberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
+
+  for (int buttonNum = 0; buttonNum < numberOfButtons; buttonNum++) {
     int pin = gButtonConfig[buttonNum].buttonPin;
     TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
     TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
@@ -128,23 +132,22 @@ void test_relayservice()
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
   };
-  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   
-  Relay * relays = new Relay[numberOfRelays];
-  RelayService * relayService = new RelayService(numberOfRelays, relays, relayConfig);
-  relayService->initialize(true); // reset eeprom
+  RelayService relayService(relayConfigRef, gEeprom);
+  relayService.initialize(true); // reset eeprom
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(0, relayService->getRelayNum(0), "[1] Lamp 1 should be 0");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, relayService->getRelayNum(5), "[1] Lamp 2 should be 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, relayService->getRelayNum(3), "[1] Lamp 3 should be 2");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, relayService.getRelayNum(0), "[1] Lamp 1 should be 0");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, relayService.getRelayNum(5), "[1] Lamp 2 should be 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, relayService.getRelayNum(3), "[1] Lamp 3 should be 2");
   
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, Pin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  Pin::_state[4], "[2] Lamp 4 should have pin state LOW when turned OFF");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[4], "[2] Lamp 4 should have pin state LOW when turned OFF");
 
-  relayService->changeState(2, true);
-  relayService->changeState(3, true);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  Pin::_state[3], "[3] Lamp 3 should have pin state LOW when turned ON");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, Pin::_state[4], "[3] Lamp 4 should have pin state HIGH when turned ON");
+  relayService.changeState(2, true, 0);
+  relayService.changeState(3, true, 0);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[3], "[3] Lamp 3 should have pin state LOW when turned ON");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[4], "[3] Lamp 4 should have pin state HIGH when turned ON");
 };
 
 
@@ -156,37 +159,32 @@ void test_relay_startup_eeprom()
     {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW | RELAY_IMPULSE, -1, "Lamp 4"},
   };
-  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   
-  Relay * relays = new Relay[numberOfRelays];
-  RelayService * relayService = new RelayService(numberOfRelays, relays, relayConfig);
-  relayService->initialize(true); // reset eeprom
-  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[1] Lamp 1 should be ON");
-  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "[1] Lamp 2 should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(relays[2].getState(), "[1] Lamp 3 should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(relays[3].getState(), "[1] Lamp 4 should be OFF");
+  RelayService relayService(relayConfigRef, gEeprom);
+  relayService.initialize(true); // reset eeprom
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "[1] Lamp 2 should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(2), "[1] Lamp 3 should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "[1] Lamp 4 should be OFF");
   
-  relayService->changeState(0, false);
-  relayService->changeState(1, true);
-  relayService->changeState(2, true);
-  relayService->changeState(3, true);
-  TEST_ASSERT_FALSE_MESSAGE(relays[0].getState(), "[2] Lamp 1 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relays[1].getState(), "[2] Lamp 2 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "[2] Lamp 3 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relays[3].getState(), "[2] Lamp 4 should be ON");
-
-  delete relayService;
-  delete relays;
+  relayService.changeState(0, false, 0);
+  relayService.changeState(1, true, 0);
+  relayService.changeState(2, true, 0);
+  relayService.changeState(3, true, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[2] Lamp 1 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "[2] Lamp 2 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(2), "[2] Lamp 3 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "[2] Lamp 4 should be ON");
 
   long dummy = -1L;
 
-  Relay * relays2 = new Relay[numberOfRelays];
-  RelayService * relayService2 = new RelayService(numberOfRelays, relays2, relayConfig);
-  relayService2->initialize(false); // do not reset eeprom
-  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[3] Lamp 1 should be ON");
-  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "[3] Lamp 2 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "[3] Lamp 3 should be ON");
-  TEST_ASSERT_FALSE_MESSAGE(relays[3].getState(), "[3] Lamp 4 (RELAY_IMPULSE) should be OFF");
+  RelayService relayService2(relayConfigRef, gEeprom);
+  relayService2.initialize(false); // do not reset eeprom
+  TEST_ASSERT_TRUE_MESSAGE(relayService2.getState(0), "[3] Lamp 1 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relayService2.getState(1), "[3] Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService2.getState(2), "[3] Lamp 3 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relayService2.getState(3), "[3] Lamp 4 (RELAY_IMPULSE) should be OFF");
 };
 
 
@@ -195,24 +193,23 @@ void test_relay_impulse()
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
-  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   
-  Relay * relays = new Relay[numberOfRelays];
-  RelayService * relayService = new RelayService(numberOfRelays, relays, relayConfig);
-  relayService->setImpulseInterval(250);
-  relayService->initialize(true); // reset eeprom
-  TEST_ASSERT_FALSE_MESSAGE(relays[0].getState(), "[1] Lamp 1 should be OFF");
+  RelayService relayService(relayConfigRef, gEeprom);
+  relayService.setImpulseInterval(250);
+  relayService.initialize(true); // reset eeprom
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be OFF");
 
-  relayService->changeState(0, true, 1000UL);
-  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[2] Lamp 1 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relayService->isImpulsePending(), "[2] Lamp 1 should be isImpulsePending() == TRUE");
+  relayService.changeState(0, true, 1000UL);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[2] Lamp 1 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.isImpulsePending(), "[2] Lamp 1 should be isImpulsePending() == TRUE");
 
-  TEST_ASSERT_FALSE_MESSAGE(relayService->impulseProcess(0, 1200UL), "[3] impulseProcess() should be FALSE");
-  TEST_ASSERT_TRUE_MESSAGE(relays[0].getState(), "[3] Lamp 1 should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.impulseProcess(0, 1200UL), "[3] impulseProcess() should be FALSE");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[3] Lamp 1 should be ON");
   
-  TEST_ASSERT_TRUE_MESSAGE(relayService->impulseProcess(0, 1300UL), "[4] impulseProcess() should be TRUE");
-  TEST_ASSERT_FALSE_MESSAGE(relays[0].getState(), "[4] Lamp 1 should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(relayService->isImpulsePending(), "[4] Lamp 1 should be isImpulsePending() == FALSE");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.impulseProcess(0, 1300UL), "[4] impulseProcess() should be TRUE");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[4] Lamp 1 should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.isImpulsePending(), "[4] Lamp 1 should be isImpulsePending() == FALSE");
 };
 
 
@@ -225,363 +222,377 @@ void test_relay_dependsOn()
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
     {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
   };
-  int numberOfRelays = sizeof(relayConfig) / sizeof(RelayConfigDef);
-  Relay relays[numberOfRelays];
-  RelayService relayService(numberOfRelays, relays, relayConfig);
-  relayService.initialize(true);
-  relayService.changeState(1, true);
-  TEST_ASSERT_TRUE_MESSAGE(relays[1].getState(), "Lamp 2 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relays[3].getState(), "Power Supply should be ON after power ON Lamp 2");
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
 
-  bool isAnyDependentOn = relayService.turnOffDependent();
+  RelayService relayService(relayConfigRef, gEeprom);
+  relayService.initialize(true);
+  relayService.changeState(1, true, 0);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "Lamp 2 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "Power Supply should be ON after power ON Lamp 2");
+
+  bool isAnyDependentOn = relayService.turnOffDependent(0);
   TEST_ASSERT_TRUE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return TRUE");
 
-  relayService.changeState(1, false);
-  TEST_ASSERT_FALSE_MESSAGE(relays[1].getState(), "Lamp 2 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relays[3].getState(), "Power Supply should be ON after power OFF Lamp 2");
+  relayService.changeState(1, false, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "Power Supply should be ON after power OFF Lamp 2");
 
-  relayService.changeState(2, true);
-  TEST_ASSERT_TRUE_MESSAGE(relays[2].getState(), "Lamp 3 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON after power ON Lamp 3");
+  relayService.changeState(2, true, 0);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(2), "Lamp 3 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON after power ON Lamp 3");
 
-  isAnyDependentOn = relayService.turnOffDependent();
-  TEST_ASSERT_FALSE_MESSAGE(relays[3].getState(), "Power Supply should be OFF");
+  isAnyDependentOn = relayService.turnOffDependent(0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "Power Supply should be OFF");
   TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE");
 
   // RELAY_INDEPENDENT
-  relayService.changeState(2, false);
-  TEST_ASSERT_FALSE_MESSAGE(relays[2].getState(), "Lamp 3 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON after power OFF Lamp 3");
-  isAnyDependentOn = relayService.turnOffDependent();
-  TEST_ASSERT_TRUE_MESSAGE(relays[4].getState(), "Stairs light should be ON even after turnOffDependent()");
+  relayService.changeState(2, false, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(2), "Lamp 3 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON after power OFF Lamp 3");
+  isAnyDependentOn = relayService.turnOffDependent(0);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON even after turnOffDependent()");
   TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE [2]");
+};
+
+
+void test_switch_low()
+{
+  FakePin pin(1);
+  DebouncedSwitch hardwareSwitch(pin, 50, LOW);
+  hardwareSwitch.attachPin();
+  pin.digitalWrite(HIGH);
+
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(0), "[2] No switch change");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[4] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(59), "[5] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[6] Switch should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(60), "[7] Switch has changed");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[8] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(61), "[9] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[10] Switch should be ON");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(100), "[11] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[12] Switch should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(150), "[13] Switch has changed");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[14] Switch should be OFF");
+};
+
+
+void test_switch_high()
+{
+  FakePin pin(1);
+  DebouncedSwitch hardwareSwitch(pin, 50, HIGH);
+  hardwareSwitch.attachPin();
+  pin.digitalWrite(LOW); // pull-down
+
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(0), "[2] No switch change");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[4] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(59), "[5] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[6] Switch should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(60), "[7] Switch has changed");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[8] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(61), "[9] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[10] Switch should be ON");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(100), "[11] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[12] Switch should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(150), "[13] Switch has changed");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[14] Switch should be OFF");
 };
 
 
 void test_button_mono_only_click_when_pressed()
 {
-  Button button;
-  Pin pin;
-  Button::setMonoStableTrigger(LOW);
-  button.initialize(MONO_STABLE, "Button 1");
-  button.setAction(1, -1, -1);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH);
-  button.attachPin(1);
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 1");
+  MonoStableButton::clickTriggerWhenPressed(true);
+  button->setAction(1, -1, -1);
+  pin.digitalWrite(HIGH);
+  button->attachPin();
 
-  millisForBounce2 = 0UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[1] updateAndGetRelayNum() should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[1] checkEvent() should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[2] Button 1 should have pin state HIGH");
 
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
-  millisForBounce2 = 45UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(45) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(1), "[2] Button 1 should have pin state LOW");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[3] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(45), "[4] checkEvent(45) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[5] Button 1 should have pin state LOW");
 
-  // well - should we test external library? Yes, maybe in future Bounce2 will be removed
-  millisForBounce2 = 60UL;
-  // after debounce interval first, run of "updateAndGetRelayNum" will only change state machine, and second invoke CLICK
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(60) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(++millisForBounce2), "[3] updateAndGetRelayNum(61) should return 1");
+  // after debounce interval first, run of "checkEvent" will only change state machine, and second invoke CLICK
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(60), "[6] checkEvent(60) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(61), "[7] checkEvent(61) should return 1");
 
-  millisForBounce2 = 120UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(120) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[4] updateAndGetRelayNum(121) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(120), "[8] checkEvent(120) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(121), "[9] checkEvent(121) should return -1");
+
+  delete button;
 };
 
 
 void test_button_mono_only_click_when_released()
 {
-  Button button;
-  Pin pin;
-  Button::setMonoStableTrigger(HIGH);
-  button.initialize(MONO_STABLE, "Button 2");
-  button.setAction(1, -1, -1);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH);
-  button.attachPin(1);
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 2");
+  MonoStableButton::clickTriggerWhenPressed(false);
+  button->setAction(1, -1, -1);
+  pin.digitalWrite(HIGH);
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
-  millisForBounce2 = 0UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
-  millisForBounce2 = 60UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(60) should return -1");
-  millisForBounce2 = 120UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(120) should return -1");
-  millisForBounce2 = 180UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(180) should return 1");
+  button->checkEvent(0);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(60), "[3] checkEvent(60) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(120), "[4] debounce timer start");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(180), "[5] debounced --> state OFF (pull-up)");
+
+  delete button;
 };
 
 
 void test_button_mono_all()
 {
-  Button button;
-  Pin pin;
-  Button::setMonoStableTrigger(LOW);
-  button.initialize(MONO_STABLE, "Button 3");
-  button.setAction(1, 2, 3);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH);
-  button.attachPin(1);
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 3");
+  MonoStableButton::clickTriggerWhenPressed(true);
+  button->setAction(1, 2, 3);
+  pin.digitalWrite(HIGH);
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[1] initial check");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[2] Physical state HIGH");
 
   // CLICK
-  millisForBounce2 = 0UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] button pressed - debounce timer start");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(60), "[3] button pressed - debounced");
 
-  millisForBounce2 = 60UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(60) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(120), "[4] button released - debounce timer start");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[5] button released - debounced - init state machine");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(501), "[6] state machine goes through click timeout");
 
-  millisForBounce2 = 120UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(120) should return -1");
-  millisForBounce2 = 500UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(500) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(++millisForBounce2), "[4] updateAndGetRelayNum(501) should return 1");
-
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[4] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[7] Button 1 should have pin state HIGH");
 
   // DOUBLE-CLICK
-  millisForBounce2 = 1000UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(1000) should return -1");
-  millisForBounce2 = 1060UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(1060) should return -1");
-  millisForBounce2 = 1120UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(1120) should return -1");
-  millisForBounce2 = 1180UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(1180) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[5] updateAndGetRelayNum(1181) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1000), "[8] checkEvent(1000) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1060), "[9] checkEvent(1060) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1120), "[10] checkEvent(1120) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1180), "[11] checkEvent(1180) should return -1");
+  //TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1181), "[12] checkEvent(1181) should return -1");
   
-  millisForBounce2 = 1240UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(1240) should return -1");
-  millisForBounce2 = 1300UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(3, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(1300) should return 3");
-  millisForBounce2 = 1360UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(1360) should return -1");
-  millisForBounce2 = 1420UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(1420) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[6] Button 1 should have pin state HIGH");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1240), "[13] checkEvent(1240) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(3, button->checkEvent(1300), "[14] checkEvent(1300) should return 3");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1360), "[15] checkEvent(1360) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1420), "[16] checkEvent(1420) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[17] Button 1 should have pin state HIGH");
 
   // LONG-PRESS
-  millisForBounce2 = 2000UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[7] updateAndGetRelayNum(2000) should return -1");
-  millisForBounce2 = 2060UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[7] updateAndGetRelayNum(2060) should return -1");
-  millisForBounce2 = 2900UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, button.updateAndGetRelayNum(millisForBounce2), "[7] updateAndGetRelayNum(2900) should return 2");
-  millisForBounce2 = 3000UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[7] updateAndGetRelayNum(1180) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(2000), "[18] checkEvent(2000) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(2060), "[19] checkEvent(2060) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, button->checkEvent(2900), "[20] checkEvent(2900) should return 2");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(3000), "[21] checkEvent(1180) should return -1");
+
+  delete button;
 };
 
 
 void test_button_bi_only()
 {
-  Button button;
-  Pin pin;
-  button.initialize(BI_STABLE, "Button 4");
-  button.setAction(1, -1, -1);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH);
-  button.attachPin(1);
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, pin, 50, "Button 4");
+  button->setAction(1, -1, -1);
+  pin.digitalWrite(HIGH);
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
 
   // CLICK
-  millisForBounce2 = 0UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
-  millisForBounce2 = 60UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(60) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(++millisForBounce2), "[4] updateAndGetRelayNum(61) should return 1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(60), "[3] checkEvent(60) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(61), "[4] checkEvent(61) should return 1");
+
+  delete button;
 };
 
 
 void test_button_bi_all()
 {
-  Button button;
-  Pin pin;
-  button.initialize(BI_STABLE, "Button 5");
-  button.setAction(1, -1, 2);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH);
-  button.attachPin(1);
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, pin, 50, "Button 5");
+  button->setAction(1, -1, 2);
+  pin.digitalWrite(HIGH);
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
 
   // CLICK
-  millisForBounce2 = 0UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
-  millisForBounce2 = 100UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(100) should return -1");
-  millisForBounce2 = 500UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(500) should return 1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[3] checkEvent(100) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(500), "[4] checkEvent(500) should return 1");
 
   // DOUBLE-CLICK
-  millisForBounce2 = 1000UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(1000) should return -1");
-  millisForBounce2 = 1060UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(1060) should return -1");
-  millisForBounce2 = 1120UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[7] updateAndGetRelayNum(1120) should return -1");
-  millisForBounce2 = 1180UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, button.updateAndGetRelayNum(millisForBounce2), "[8] updateAndGetRelayNum(1180) should return 2");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[9] updateAndGetRelayNum(1181) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1000), "[5] checkEvent(1000) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1060), "[6] checkEvent(1060) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1120), "[7] checkEvent(1120) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, button->checkEvent(1180), "[8] checkEvent(1180) should return 2");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1181), "[9] checkEvent(1181) should return -1");
+
+  delete button;
 };
 
 
 void test_button_ding_dong_only()
 {
-  // TODO: Button::setMonoStableTrigger(HIGH); ????
-  Button button;
-  Pin pin;
-  button.initialize(DING_DONG, "Button 6");
-  button.setAction(1, -1, -1);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, HIGH); // initially same state as MONO
-  button.attachPin(1);
+  // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(DING_DONG, pin, 50, "Button 6");
+  button->setAction(1, -1, -1);
+  pin.digitalWrite(HIGH); // initially same state as MONO
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(1), "[1] Button 1 should have pin state HIGH");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
 
   // DING (pressed)
-  millisForBounce2 = 0UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(0) should return -1");
-  millisForBounce2 = 60UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(60) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[4] updateAndGetRelayNum(61) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(60), "[3] checkEvent(60) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(61), "[4] checkEvent(61) should return -1");
 
   // DONG (released)
-  millisForBounce2 = 500UL;
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[5] updateAndGetRelayNum(500) should return -1");
-  millisForBounce2 = 560UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(560) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[7] updateAndGetRelayNum(561) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[5] checkEvent(500) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[6] checkEvent(560) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[7] checkEvent(561) should return -1");
+
+  delete button;
 };
 
 
 void test_button_reed_switch_only()
 {
-  // TODO: Button::setMonoStableTrigger(HIGH); ????
-  Button button;
-  Pin pin;
-  button.initialize(REED_SWITCH, "Button 7");
-  button.setAction(1, -1, -1);
-  button.setDebounceInterval(50);
-  pin.digitalWrite(1, LOW); // initially LOW - window closed
-  button.attachPin(1);
+  // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
+  FakePin pin(1);
+  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, pin, 50, "Button 7");
+  button->setAction(1, -1, -1);
+  pin.digitalWrite(LOW); // initially LOW - window closed
+  button->attachPin();
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(1), "[1] Button 1 should have pin state LOW");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[1] Button 1 should have pin state LOW");
 
   // OPEN (reed switch disconnected)
-  millisForBounce2 = 100UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[2] updateAndGetRelayNum(100) should return -1");
-  pin.digitalWrite(1, HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[3] updateAndGetRelayNum(100) should return -1");
-  millisForBounce2 = 160UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[4] updateAndGetRelayNum(160) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[5] updateAndGetRelayNum(161) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[2] checkEvent(100) should return -1");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[3] checkEvent(100) should return -1");
+  //TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[4] checkEvent(160) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(161), "[5] checkEvent(161) should return -1");
 
   // CLOSED (reed switch connected)
-  millisForBounce2 = 500UL;
-  pin.digitalWrite(1, LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(500) should return -1");
-  millisForBounce2 = 560UL;
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button.updateAndGetRelayNum(millisForBounce2), "[6] updateAndGetRelayNum(560) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button.updateAndGetRelayNum(++millisForBounce2), "[7] updateAndGetRelayNum(561) should return -1");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[6] checkEvent(500) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[7] checkEvent(560) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[8] checkEvent(561) should return -1");
+
+  delete button;
 };
-
-
 
 
 void test_button_to_relay_state()
 {
-  Pin pin;
+  FakePin pin(1);
+  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 8");
+  buttonMono->attachPin();
 
-  Button buttonMono;
-  buttonMono.initialize(MONO_STABLE, "Button 8");
-  buttonMono.attachPin(1);
+  TEST_ASSERT_FALSE_MESSAGE(buttonMono->getRelayState(true), "[1] getRelayState MONO");
+  TEST_ASSERT_TRUE_MESSAGE(buttonMono->getRelayState(false), "[2] getRelayState MONO");
 
-  TEST_ASSERT_FALSE_MESSAGE(buttonMono.getRelayState(true), "[1] getRelayState MONO");
-  TEST_ASSERT_TRUE_MESSAGE(buttonMono.getRelayState(false), "[2] getRelayState MONO");
+  delete buttonMono;
 
-  Button buttonBi;
-  buttonBi.initialize(BI_STABLE, "Button 9");
-  buttonBi.attachPin(1);
+  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, pin, 50, "Button 9");
+  buttonBi->attachPin();
 
-  TEST_ASSERT_FALSE_MESSAGE(buttonBi.getRelayState(true), "[3] getRelayState BI");
-  TEST_ASSERT_TRUE_MESSAGE(buttonBi.getRelayState(false), "[4] getRelayState BI");
+  TEST_ASSERT_FALSE_MESSAGE(buttonBi->getRelayState(true), "[3] getRelayState BI");
+  TEST_ASSERT_TRUE_MESSAGE(buttonBi->getRelayState(false), "[4] getRelayState BI");
 
-  Button buttonDingDong;
-  buttonDingDong.initialize(DING_DONG, "Button 10");
-  buttonDingDong.attachPin(1);
+  delete buttonBi;
 
-  pin.digitalWrite(1, HIGH); // OFF
-  millisForBounce2 =    0; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong.getRelayState(false), "[5] getRelayState DING-DONG");
-  pin.digitalWrite(1, LOW);  // ON
-  millisForBounce2 += 100; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_TRUE_MESSAGE(buttonDingDong.getRelayState(false), "[6] getRelayState DING-DONG");
-  pin.digitalWrite(1, HIGH); // OFF
-  millisForBounce2 += 100; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonDingDong.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong.getRelayState(false), "[7] getRelayState DING-DONG");
+  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, pin, 50, "Button 10");
+  buttonDingDong->attachPin();
 
-  Button buttonReedSwitch;
-  buttonReedSwitch.initialize(REED_SWITCH, "Button 11");
-  buttonReedSwitch.attachPin(1);
+  pin.digitalWrite(HIGH); // OFF
+  buttonDingDong->checkEvent(0);
+  buttonDingDong->checkEvent(100);
+  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(false), "[5] getRelayState DING-DONG");
+  pin.digitalWrite(LOW);  // ON
+  buttonDingDong->checkEvent(200);
+  buttonDingDong->checkEvent(300);
+  TEST_ASSERT_TRUE_MESSAGE(buttonDingDong->getRelayState(false), "[6] getRelayState DING-DONG");
+  pin.digitalWrite(HIGH); // OFF
+  buttonDingDong->checkEvent(400);
+  buttonDingDong->checkEvent(500);
+  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(false), "[7] getRelayState DING-DONG");
 
-  pin.digitalWrite(1, LOW); // CLOSED
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch.getRelayState(false), "[8] getRelayState REED-SWITCH");
-  pin.digitalWrite(1, HIGH); // OPEN
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_TRUE_MESSAGE(buttonReedSwitch.getRelayState(false), "[9] getRelayState REED-SWITCH");
-  pin.digitalWrite(1, LOW); // CLOSED
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  millisForBounce2 += 100; buttonReedSwitch.updateAndGetRelayNum(millisForBounce2);
-  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch.getRelayState(false), "[10] getRelayState REED-SWITCH");
+  delete buttonDingDong;
+
+  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, pin, 50, "Button 11");
+  buttonReedSwitch->attachPin();
+
+  pin.digitalWrite(LOW); // CLOSED
+  buttonReedSwitch->checkEvent(600);
+  buttonReedSwitch->checkEvent(700);
+  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(false), "[8] getRelayState REED-SWITCH");
+  pin.digitalWrite(HIGH); // OPEN
+  buttonReedSwitch->checkEvent(800);
+  buttonReedSwitch->checkEvent(900);
+  TEST_ASSERT_TRUE_MESSAGE(buttonReedSwitch->getRelayState(false), "[9] getRelayState REED-SWITCH");
+  pin.digitalWrite(LOW); // CLOSED
+  buttonReedSwitch->checkEvent(1000);
+  buttonReedSwitch->checkEvent(1100);
+  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(false), "[10] getRelayState REED-SWITCH");
+
+  delete buttonReedSwitch;
 };
 
 
 
 int main(int argc, char **argv)
 {
-    UNITY_BEGIN();
+  UNITY_BEGIN();
 
-    RUN_TEST(test_config_relays);
-    RUN_TEST(test_config_buttons);
-    RUN_TEST(test_relayservice);
-    RUN_TEST(test_relay_startup_eeprom);
-    RUN_TEST(test_relay_impulse);
-    RUN_TEST(test_relay_dependsOn);
-    RUN_TEST(test_button_mono_only_click_when_pressed);
-    RUN_TEST(test_button_mono_only_click_when_released);
-    RUN_TEST(test_button_mono_all);
-    RUN_TEST(test_button_bi_only);
-    RUN_TEST(test_button_bi_all);
-    RUN_TEST(test_button_ding_dong_only);
-    RUN_TEST(test_button_reed_switch_only);
-    RUN_TEST(test_button_to_relay_state);
+  RUN_TEST(test_config_relays);
+  RUN_TEST(test_config_buttons);
+  RUN_TEST(test_relayservice);
+  RUN_TEST(test_relay_startup_eeprom);
+  RUN_TEST(test_relay_impulse);
+  RUN_TEST(test_relay_dependsOn);
+  RUN_TEST(test_switch_low);
+  RUN_TEST(test_switch_high);
+  RUN_TEST(test_button_mono_only_click_when_pressed);
+  RUN_TEST(test_button_mono_only_click_when_released);
+  RUN_TEST(test_button_mono_all);
+  RUN_TEST(test_button_bi_only);
+  RUN_TEST(test_button_bi_all);
+  RUN_TEST(test_button_ding_dong_only);
+  RUN_TEST(test_button_reed_switch_only);
+  RUN_TEST(test_button_to_relay_state);
 
-    return UNITY_END();
+  return UNITY_END();
 };

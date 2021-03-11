@@ -87,7 +87,7 @@ class Debounce : public Bounce
     #endif
 
     uint16_t pin;
-    Pin _pinObj;
+    ArduinoPin _pinObj;
 };
 
 } // namespace lkankowski

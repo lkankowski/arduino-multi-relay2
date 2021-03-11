@@ -2,3 +2,20 @@ benchmark:
 - 421ms - moja konfiguracja na wersji inicjalnej po refactoringu
 - ??ms - tablice zamienione na "array"
 - ??ms - użycie "vector" do grup
+
+Po refactoringu związanym z unit testami:
+RAM:   [=====     ]  49.6% (used 4061 bytes from 8192 bytes)
+Flash: [=         ]   7.0% (used 17686 bytes from 253952 bytes)
+# 1000 loop stats: (end-start)=514ms, cumulative_loop_millis=504ms
+
+Refaktoring Buttons (dynamiczna alokacja RAM) i wyrzucenie biblioteki Bounce2
+RAM:   [===       ]  31.7% (used 2595 bytes from 8192 bytes)
+Flash: [=         ]   7.7% (used 19484 bytes from 253952 bytes)
+
+
+
+https://www.verypossible.com/insights/a-quick-guide-to-unit-testing-hardware-in-arduino
+
+TODO:
+- redukcja typów: np. id przekaźników, iteratory, itp. na uint8_t
+- dodanie "inline" tam gdzie ma sens

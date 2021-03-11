@@ -24,30 +24,36 @@ typedef struct {
   const char * relayDescription;
 } RelayConfigDef;
 
+typedef struct {
+  const RelayConfigDef * config;
+  int size;
+} RelayConfigRef;
+
 
 class RelayService {
 
   public:
-    RelayService(const int, Relay *, const RelayConfigDef *);
+    RelayService(const RelayConfigRef &, EepromInterface &);
     ~RelayService();
 
     void initialize(bool);
-    bool changeState(int, bool);
     bool changeState(int, bool, unsigned long);
+    bool getState(int);
     bool impulseProcess(int, unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
     bool isImpulsePending() { return(_impulsePending > 0); };
-    bool turnOffDependent();
+    bool turnOffDependent(unsigned long);
+    int getSensorId(int);
     int getRelayNum(int);
+    const char * getDescription(int);
     String toString(int);
-
 
   private:
     int _numberOfRelays;
-    Relay * _relays;
-    const RelayConfigDef * _relayConfig;
+    RelayPtr * _relays;
+    const RelayConfigRef & _relayConfig;
     bool * _storeRelayToEEPROM;
-    Eeprom _eeprom;
+    EepromInterface& _eeprom;
     int _impulsePending;
     unsigned long _impulseInterval;
     bool * _relayIsImpulse;

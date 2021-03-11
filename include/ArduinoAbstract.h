@@ -1,34 +1,87 @@
 #pragma once
 
 #include <stdint.h>
+
 #ifdef ARDUINO
 #include <Arduino.h>
+
+#if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
+  #if defined(EXPANDER_PCF8574)
+    #include "PCF8574.h"
+    #define EXPANDER_PINS 8
+  #elif defined(EXPANDER_MCP23017)
+    #include "Adafruit_MCP23017.h"
+    #define EXPANDER_PINS 16
+  #endif
+  #define USE_EXPANDER
+  #include <Wire.h>    // Required for I2C communication
+  #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
 #endif
+
+#ifdef USE_EXPANDER
+  const int gNumberOfExpanders = sizeof(expanderAddresses);
+  #if defined(PCF8574_H)
+    PCF8574 gExpander[gNumberOfExpanders];
+  #elif defined(_Adafruit_MCP23017_H_)
+    Adafruit_MCP23017 gExpander[gNumberOfExpanders];
+  #endif
+#endif
+
+#endif //ARDUINO
 
 
 namespace lkankowski {
 
   class PinInterface
   {
-  public:
-    virtual void pinMode(uint8_t pin, uint8_t mode) = 0;
-    virtual int digitalRead(uint8_t pin) = 0;
-    virtual void digitalWrite(uint8_t pin, uint8_t val) = 0;
+    public:
+      virtual ~PinInterface() {};
+
+      virtual void pinMode(uint8_t mode) const = 0;
+      virtual int digitalRead() const = 0;
+      virtual void digitalWrite(uint8_t val) const = 0;
   };
 
 
-  class Pin : public PinInterface
+  class ArduinoPin : public PinInterface
   {
-  public:
-    void pinMode(uint8_t pin, uint8_t val);
-    int digitalRead(uint8_t pin);
-    void digitalWrite(uint8_t pin, uint8_t val);
-    
-    #ifndef ARDUINO
+    public:
+      ArduinoPin(uint8_t);
+
+      void pinMode(uint8_t mode) const;
+      int digitalRead() const;
+      void digitalWrite(uint8_t val) const;
+      
+    private:
+      int _pin;
+  };
+
+  #ifndef ARDUINO
+  class FakePin : public PinInterface
+  {
+    public:
+      FakePin(uint8_t);
+
+      void pinMode(uint8_t mode) const;
+      int digitalRead() const;
+      void digitalWrite(uint8_t val) const;
+      
       static uint8_t _mode[10];
       static uint8_t _state[10];
-    #endif
-};
+    
+    private:
+      int _pin;
+  };
+  #endif
+
+  class PinCreator
+  {
+    public:
+      static PinInterface& create(int pin);
+    
+    private:
+      PinCreator() {};
+  };
 
 } // namespace lkankowski
 
