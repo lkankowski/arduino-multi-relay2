@@ -125,7 +125,10 @@ void before() {
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-      int pin = gRelayConfig[relayNum].relayPin;
+      RelayConfigDef relayConfig = {};
+      PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
+
+      int pin = relayConfig.relayPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)) {
           printf_P(PSTR("Configuration failed - expander no or number of pins out of range for relay: %i\n"), relayNum);
@@ -136,8 +139,11 @@ void before() {
     }
   #endif
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+    ButtonConfigDef buttonConfig = {};
+    PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+
     #ifdef USE_EXPANDER
-      int pin = gButtonConfig[buttonNum].buttonPin;
+      int pin = buttonConfig.buttonPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)) {
           printf_P(PSTR("Configuration failed - expander no or number of pins out of range for button: %i\n"), buttonNum);
@@ -148,8 +154,6 @@ void before() {
     #endif
     const char * failAction[] = {"OK", "click", "long-press", "double-click"};
     int fail = 0;
-    ButtonConfigDef buttonConfig = {};
-    PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
 
     if ((buttonConfig.clickRelayId != -1) && (getRelayNum(buttonConfig.clickRelayId) == -1)) fail = 1;
     if ((buttonConfig.longClickRelayId != -1) && (getRelayNum(buttonConfig.longClickRelayId) == -1)) fail = 2;
