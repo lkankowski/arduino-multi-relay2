@@ -25,6 +25,7 @@ class ButtonService
     ButtonService(const ButtonConfigRef & gButtonConfig, unsigned int);
     ~ButtonService();
 
+    // void setup(); 
     void setAction(int, int, int, int); 
     void attachPin(int);
     int checkEvent(int, unsigned long loopStartMillis);

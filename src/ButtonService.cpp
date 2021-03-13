@@ -31,6 +31,18 @@ ButtonService::~ButtonService()
 };
 
 
+// void ButtonService::setup()
+// {
+//   for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+//   {
+//     gButtonService.setAction(buttonNum,
+//                             gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
+//                             gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+//                             gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+//     gButtonService.attachPin(buttonNum);
+//   }
+// }; 
+
 void ButtonService::setAction(int buttonNum, int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
 {
   _button[buttonNum]->setAction(clickRelayNum, longclickRelayNum, doubleclickRelayNum);

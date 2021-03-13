@@ -17,5 +17,14 @@ Flash: [=         ]   7.7% (used 19484 bytes from 253952 bytes)
 https://www.verypossible.com/insights/a-quick-guide-to-unit-testing-hardware-in-arduino
 
 TODO:
+- refactoring Button w main i ButtonService
 - redukcja typów: np. id przekaźników, iteratory, itp. na uint8_t
 - dodanie "inline" tam gdzie ma sens
+- implementacja ekspanderów - HardwareSwitchInterface
+- przetestować ekspandery
+- fake expander?
+- wywalenie "String"???
+- osobne "env:" do testowania konfiguracji
+- wyrzucić walidację z arduino
+- stringi do PROGMEM
+- konfiguracja do PROGMEM??

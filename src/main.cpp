@@ -174,13 +174,14 @@ void setup()
   ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
   MonoStableButton::clickTriggerWhenPressed(true);
 
+  // gButtonService.setup();
   for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
   {
     gButtonService.setAction(buttonNum,
                             gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
                             gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
                             gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
-    gButtonService.attachPin(buttonNum); //gButtonConfig[buttonNum].buttonPin);
+    gButtonService.attachPin(buttonNum);
   }
 };
 
