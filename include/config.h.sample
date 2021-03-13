@@ -32,7 +32,7 @@ const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";
 //             relay pin - pin used for relay, can be expander pin via "E(x, y)" macro
 //             relay options - [RELAY_TRIGGER_LOW|RELAY_TRIGGER_HIGH] {RELAY_STARTUP_ON|RELAY_STARTUP_OFF} {RELAY_IMPULSE}
 //             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, can be empty ("")
-const RelayConfigDef gRelayConfig[] = {
+const RelayConfigDef gRelayConfig[] PROGMEM = {
   {1, 2, RELAY_TRIGGER_LOW, "RELAY 1"},
   {2, 3, RELAY_TRIGGER_LOW, "RELAY 2"},
   {3, 4, RELAY_TRIGGER_LOW, "RELAY 3"},
@@ -49,11 +49,10 @@ const RelayConfigDef gRelayConfig[] = {
 //             long-press action relay ID - ignored for BI_STABLE, DING_DONG, REED_SWITCH
 //             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
 //             button description - debug only, can be empty ("")
-const ButtonConfigDef gButtonConfig[] = {
+const ButtonConfigDef gButtonConfig[] PROGMEM = {
   {A0,  MONO_STABLE, 1,  -1, -1, "BUTTON 1"},
   {A1,  MONO_STABLE, 2,   6, -1, "BUTTON 2"},
   {A2,  MONO_STABLE, 3,   1,  7, "BUTTON 3"},
   {A3,  BI_STABLE,   4,  -1, -1, "BUTTON 4"},
   {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"}
 };
-
