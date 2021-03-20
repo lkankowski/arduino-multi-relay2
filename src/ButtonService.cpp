@@ -1,19 +1,16 @@
 #include <ButtonService.h>
-//#include <ArduinoAbstract.h>
 
 using namespace lkankowski;
 
 
 ButtonService::ButtonService(const ButtonConfigRef & buttonConfig, unsigned int debounceInterval)
   : _buttonConfig(buttonConfig)
-  , _numberOfButtons(sizeof(buttonConfig) / sizeof(ButtonConfigDef))
 {
-  _button = new ButtonInterface*[_numberOfButtons];
-  _pin = new PinInterface*[_numberOfButtons];
-  for (int buttonNum = 0; buttonNum < _numberOfButtons; buttonNum++) {
-    _pin[buttonNum] = &PinCreator::create(_buttonConfig.config[buttonNum].buttonPin);
+  _button = new ButtonInterface*[_buttonConfig.size];
+  for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+  {
     _button[buttonNum] = ButtonInterface::create(_buttonConfig.config[buttonNum].buttonType,
-                                                 *_pin[buttonNum],
+                                                 _buttonConfig.config[buttonNum].buttonPin,
                                                  debounceInterval,
                                                  _buttonConfig.config[buttonNum].buttonDescription);
   }
@@ -22,12 +19,11 @@ ButtonService::ButtonService(const ButtonConfigRef & buttonConfig, unsigned int 
 
 ButtonService::~ButtonService()
 {
-  for (int buttonNum = 0; buttonNum < _numberOfButtons; buttonNum++) {
+  for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+  {
     delete _button[buttonNum];
-    delete _pin[buttonNum];
   }
-  delete _pin;
-  delete _button;
+  delete [] _button;
 };
 
 

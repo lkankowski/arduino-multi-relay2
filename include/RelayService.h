@@ -49,8 +49,8 @@ class RelayService {
     String toString(int);
 
   private:
-    int _numberOfRelays;
     RelayPtr * _relays;
+    PinInterface ** _pin;
     const RelayConfigRef & _relayConfig;
     bool * _storeRelayToEEPROM;
     EepromInterface& _eeprom;

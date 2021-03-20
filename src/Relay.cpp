@@ -7,20 +7,18 @@ using namespace lkankowski;
 #endif
 
 
-Relay::Relay(PinInterface& pin)
+Relay::Relay(PinInterface * pin)
     : _pin(pin)
     , _state(false)
     , _sensorId(0)
-    // , _description(NULL)
+    , _description(NULL)
     , _triggerState(0)
 {
 };
 
 
 Relay::~Relay()
-{
-  delete &_pin;
-};
+{};
 
 
 void Relay::initialize(int sensorId, const char * description)
@@ -32,7 +30,7 @@ void Relay::initialize(int sensorId, const char * description)
 
 void Relay::attachPin()
 {
-  _pin.pinMode(OUTPUT);
+  _pin->pinMode(OUTPUT);
 };
 
 
@@ -46,7 +44,7 @@ bool Relay::changeState(bool state)
   bool stateHasChanged = state != _state;
   uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
 
-  _pin.digitalWrite(digitalOutState);
+  _pin->digitalWrite(digitalOutState);
 
   _state = state;
 

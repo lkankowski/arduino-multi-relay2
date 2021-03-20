@@ -1,6 +1,5 @@
 #pragma once
 
-//#include <ArduinoAbstract.h>
 #include <Switch.h>
 
 namespace lkankowski {
@@ -17,7 +16,7 @@ enum ButtonType {
 class ButtonInterface
 {
   public:
-    ButtonInterface(PinInterface&, unsigned int, ButtonType, const char * const);
+    ButtonInterface(HardwareSwitchInterface *, const char * const);
     virtual ~ButtonInterface();
 
     virtual int checkEvent(unsigned long) = 0;
@@ -28,7 +27,7 @@ class ButtonInterface
     String toString();
 
     static void setEventIntervals(unsigned long, unsigned long);
-    static ButtonInterface * create(ButtonType, PinInterface&, unsigned int, const char * const);
+    static ButtonInterface * create(ButtonType, int, unsigned int, const char * const);
 
   protected:
     virtual int calculateEvent(bool, unsigned long) = 0;
@@ -70,7 +69,7 @@ typedef ButtonInterface* ButtonPtr;
 class MonoStableButton : public ButtonInterface
 {
   public:
-    MonoStableButton(PinInterface&, unsigned int, ButtonType, const char * const);
+    MonoStableButton(HardwareSwitchInterface *, const char * const);
 
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
@@ -86,7 +85,7 @@ class MonoStableButton : public ButtonInterface
 class BiStableButton : public ButtonInterface
 {
   public:
-    BiStableButton(PinInterface&, unsigned int, ButtonType, const char * const);
+    BiStableButton(HardwareSwitchInterface *, const char * const);
 
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
@@ -99,7 +98,7 @@ class BiStableButton : public ButtonInterface
 class DingDongButton : public ButtonInterface
 {
   public:
-    DingDongButton(PinInterface&, unsigned int, ButtonType, const char * const);
+    DingDongButton(HardwareSwitchInterface *, const char * const);
 
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
@@ -112,7 +111,7 @@ class DingDongButton : public ButtonInterface
 class ReedSwitch : public ButtonInterface
 {
   public:
-    ReedSwitch(PinInterface&, unsigned int, ButtonType, const char * const);
+    ReedSwitch(HardwareSwitchInterface *, const char * const);
 
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;

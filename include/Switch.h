@@ -14,7 +14,7 @@ class HardwareSwitchInterface
     virtual bool update(unsigned long) = 0;
     virtual bool getState() const = 0;
 
-    static HardwareSwitchInterface * create(int, PinInterface&, unsigned int, uint8_t);
+    static HardwareSwitchInterface * create(int, int, unsigned int, uint8_t);
 
     enum HWSwitchType {
       SWITCH_DEBOUNCED
@@ -25,15 +25,15 @@ class HardwareSwitchInterface
 class DebouncedSwitch : public HardwareSwitchInterface
 {
   public:
-    DebouncedSwitch(PinInterface&, unsigned int, uint8_t);
+    DebouncedSwitch(int, unsigned int, uint8_t);
     virtual ~DebouncedSwitch();
 
-    void attachPin();
-    bool update(unsigned long);
-    bool getState() const;
+    void attachPin() override;
+    bool update(unsigned long) override;
+    bool getState() const override;
   
   private:
-    PinInterface& _pin;
+    PinInterface * _pin;
     const unsigned int _debounceInterval;
     unsigned long _previousMillis;
     bool _unstableState;

@@ -1,40 +1,42 @@
 #include <Button.h>
-// #include <iostream>
 
 using namespace lkankowski;
 
 // static variables initialisation
-unsigned long ButtonInterface::_doubleclickInterval = 350;
+unsigned long ButtonInterface::_doubleclickInterval = 300;
 unsigned long ButtonInterface::_longclickInterval = 800;
 bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-ButtonInterface * ButtonInterface::create(ButtonType type, PinInterface& pin, unsigned int debounceInterval, const char * const description)
+ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int debounceInterval, const char * const description)
 {
+  HardwareSwitchInterface * switchHW =
+    HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
+                                    pin,
+                                    debounceInterval,
+                                    (type & PRESSED_STATE_HIGH) ? HIGH : LOW);
+
   switch(type & 0x0f)
   {
-    case MONO_STABLE: return new MonoStableButton(pin, debounceInterval, type, description);
-    case BI_STABLE:   return new BiStableButton(pin, debounceInterval, type, description);
-    case DING_DONG:   return new DingDongButton(pin, debounceInterval, type, description);
-    case REED_SWITCH: return new ReedSwitch(pin, debounceInterval, type, description);
+    case MONO_STABLE: return new MonoStableButton(switchHW, description);
+    case BI_STABLE:   return new BiStableButton(switchHW, description);
+    case DING_DONG:   return new DingDongButton(switchHW, description);
+    case REED_SWITCH: return new ReedSwitch(switchHW, description);
   }
+  delete switchHW;
   return nullptr;
 };
 
 
-ButtonInterface::ButtonInterface(PinInterface& pin, unsigned int debounceInterval, ButtonType type, const char * const description)
-    : _switch(HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
-                                              pin,
-                                              debounceInterval,
-                                              (type & PRESSED_STATE_HIGH) ? HIGH : LOW))
+ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW, const char * const description)
+    : _switch(switchHW)
     , _description(description)
     , _clickRelayNum(-1)
     , _longclickRelayNum(-1)
     , _doubleclickRelayNum(-1)
     , _eventState(BTN_STATE_INITIAL)
     , _startStateMillis(0)
-{
-};
+{};
 
 
 ButtonInterface::~ButtonInterface()
@@ -43,23 +45,23 @@ ButtonInterface::~ButtonInterface()
 };
 
 
-MonoStableButton::MonoStableButton(PinInterface& pin, unsigned int debounceInterval, ButtonType type, const char * const description)
-  : ButtonInterface(pin, debounceInterval, type, description)
+MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW, const char * const description)
+  : ButtonInterface(switchHW, description)
 {};
 
 
-BiStableButton::BiStableButton(PinInterface& pin, unsigned int debounceInterval, ButtonType type, const char * const description)
-  : ButtonInterface(pin, debounceInterval, type, description)
+BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW, const char * const description)
+  : ButtonInterface(switchHW, description)
 {};
 
 
-DingDongButton::DingDongButton(PinInterface& pin, unsigned int debounceInterval, ButtonType type, const char * const description)
-  : ButtonInterface(pin, debounceInterval, type, description)
+DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW, const char * const description)
+  : ButtonInterface(switchHW, description)
 {};
 
 
-ReedSwitch::ReedSwitch(PinInterface& pin, unsigned int debounceInterval, ButtonType type, const char * const description)
-  : ButtonInterface(pin, debounceInterval, type, description)
+ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW, const char * const description)
+  : ButtonInterface(switchHW, description)
 {};
 
 

@@ -8,7 +8,7 @@ namespace lkankowski {
 class Relay {
 
   public:
-    Relay(PinInterface & pin);
+    explicit Relay(PinInterface * pin);
     ~Relay();
 
     void initialize(int, const char *);
@@ -20,7 +20,7 @@ class Relay {
     const char * getDescription() { return(_description); };
 
   private:
-    PinInterface& _pin;
+    PinInterface * _pin;
     bool _state; // true/false = ON/OFF
     int _sensorId;
     const char * _description;

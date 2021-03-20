@@ -22,21 +22,19 @@ typedef struct {
 class ButtonService
 {
   public:
-    ButtonService(const ButtonConfigRef & gButtonConfig, unsigned int);
+    ButtonService(const ButtonConfigRef &, unsigned int);
     ~ButtonService();
 
     // void setup(); 
     void setAction(int, int, int, int); 
     void attachPin(int);
-    int checkEvent(int, unsigned long loopStartMillis);
+    int checkEvent(int, unsigned long);
     bool getRelayState(int, bool);
     String toString(int);
 
   private:
     const ButtonConfigRef & _buttonConfig;
-    const int _numberOfButtons;
     ButtonInterface ** _button;  //TODO: check shared_ptr
-    PinInterface ** _pin;
 };
 
 } //namespace

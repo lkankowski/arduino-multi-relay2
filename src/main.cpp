@@ -11,11 +11,7 @@
 
 using namespace lkankowski;
 
-#define xstr(a) str(a)
-#define str(a) #a
 const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
-
-#define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
 
 // Configuration in separate file
 #include "config.h"
@@ -68,7 +64,7 @@ void before()
     #endif
 
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - relay config");
-    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
       Serial.println(String("# ")+(debugCounter++)+" > "+gRelayConfig[relayNum].sensorId+";"+gRelayConfig[relayNum].relayPin+";"
                      +gRelayConfig[relayNum].relayOptions+";"+gRelayConfig[relayNum].relayDescription);
     }
@@ -80,7 +76,7 @@ void before()
     }
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (first value is version, relay state starts at "+RELAY_STATE_STORAGE+")");
     Serial.print(String("# ")+(debugCounter++)+" ");
-    for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
       Serial.print(EEPROM.read(relayNum));
       Serial.print(",");
     }
@@ -101,7 +97,7 @@ void before()
   // validate config
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
-    for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)) {
@@ -112,6 +108,7 @@ void before()
       }
     }
   #endif
+
   for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
     #ifdef USE_EXPANDER
       int pin = gButtonConfig[buttonNum].buttonPin;
@@ -245,19 +242,19 @@ void loop()
     gTurnOffDependentsCounter = 500;
 
     // debug feature
-    // for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    //   if ((gRelayConfig[relayNum].relayPin >= 0) &&
-    //       (gRelayService.getState(relayNum) != (pin.digitalRead(gRelayConfig[relayNum].relayPin) == LOW))) {
-    //     Serial.println(String("# Error state relay ") + gRelay[relayNum].getSensorId() + ": state=" + gRelay[relayNum].getState()
-    //                    + ", pin_state=" + pin.digitalRead(gRelayConfig[relayNum].relayPin));
-    //   }
-    //   if (((gRelayConfig[relayNum].relayOptions & RELAY_STARTUP_MASK) == 0) &&
-    //       (gRelay[relayNum].getState() != (EEPROM.read(RELAY_STATE_STORAGE + relayNum) == 1)))
-    //   {
-    //     Serial.println(String("# Error eeprom relay ") + gRelay[relayNum].getSensorId() + ": state=" + gRelay[relayNum].getState()
-    //                    + ", eeprom=" + EEPROM.read(RELAY_STATE_STORAGE + relayNum));
-    //   }
-    // }
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
+      if ((gRelayConfig[relayNum].relayPin >= 0) &&
+          (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin) == LOW))) {
+        Serial.println(String("# Error state relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
+                       + ", pin_state=" + ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin));
+      }
+      if (((gRelayConfig[relayNum].relayOptions & RELAY_STARTUP_MASK) == 0) &&
+          (gRelayService.getState(relayNum) != (gEeprom.read(RELAY_STATE_STORAGE + relayNum) == 1)))
+      {
+        Serial.println(String("# Error eeprom relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
+                       + ", eeprom=" + gEeprom.read(RELAY_STATE_STORAGE + relayNum));
+      }
+    }
   }
 };
 
@@ -328,7 +325,48 @@ void receive(const MyMessage &message)
 };
 
 #else
-unsigned long millisForBounce2 = 0UL;
-int main( int argc, char **argv) {};
+
+#include <ArduinoAbstract.h>
+#include <EepromAbstract.h>
+#include <RelayService.h>
+#include <ButtonService.h>
+#include <iostream>
+
+using namespace lkankowski;
+
+#include "config.h"
+
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+
+Eeprom gEeprom;
+RelayService gRelayService(gRelayConfigRef, gEeprom);
+ButtonService gButtonService(gButtonConfigRef, BUTTON_DEBOUNCE_INTERVAL);
+
+int main( int argc, char **argv) {
+
+  std::cout << "hello" << std::endl;
+
+  // initialize relays
+  // gRelayService.setImpulseInterval(RELAY_IMPULSE_INTERVAL);
+  // gRelayService.initialize(false);
+
+  // Setup buttons
+  ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
+  MonoStableButton::clickTriggerWhenPressed(true);
+
+  Serial.println("# setup() - before button setup");
+  for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
+  {
+    gButtonService.setAction(buttonNum,
+                            gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
+                            gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+                            gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    Serial.println("# setup() - setAction");
+    gButtonService.attachPin(buttonNum);
+    Serial.println("# setup() - attachPin");
+  }
+  Serial.println("# setup() - after button setup");
+};
 #endif
 #endif

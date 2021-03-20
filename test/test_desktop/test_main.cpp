@@ -258,7 +258,7 @@ void test_relay_dependsOn()
 void test_switch_low()
 {
   FakePin pin(1);
-  DebouncedSwitch hardwareSwitch(pin, 50, LOW);
+  DebouncedSwitch hardwareSwitch(1, 50, LOW);
   hardwareSwitch.attachPin();
   pin.digitalWrite(HIGH);
 
@@ -284,7 +284,7 @@ void test_switch_low()
 void test_switch_high()
 {
   FakePin pin(1);
-  DebouncedSwitch hardwareSwitch(pin, 50, HIGH);
+  DebouncedSwitch hardwareSwitch(1, 50, HIGH);
   hardwareSwitch.attachPin();
   pin.digitalWrite(LOW); // pull-down
 
@@ -310,7 +310,7 @@ void test_switch_high()
 void test_button_mono_only_click_when_pressed()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 1");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 1");
   MonoStableButton::clickTriggerWhenPressed(true);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
@@ -339,7 +339,7 @@ void test_button_mono_only_click_when_pressed()
 void test_button_mono_only_click_when_released()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 2");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 2");
   MonoStableButton::clickTriggerWhenPressed(false);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
@@ -361,7 +361,7 @@ void test_button_mono_only_click_when_released()
 void test_button_mono_all()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 3");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 3");
   MonoStableButton::clickTriggerWhenPressed(true);
   button->setAction(1, 2, 3);
   pin.digitalWrite(HIGH);
@@ -414,7 +414,7 @@ void test_button_mono_all()
 void test_button_bi_only()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, pin, 50, "Button 4");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, "Button 4");
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
   button->attachPin();
@@ -434,7 +434,7 @@ void test_button_bi_only()
 void test_button_bi_all()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, pin, 50, "Button 5");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, "Button 5");
   button->setAction(1, -1, 2);
   pin.digitalWrite(HIGH);
   button->attachPin();
@@ -464,7 +464,7 @@ void test_button_ding_dong_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(DING_DONG, pin, 50, "Button 6");
+  ButtonInterface * button = ButtonInterface::create(DING_DONG, 1, 50, "Button 6");
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH); // initially same state as MONO
   button->attachPin();
@@ -491,7 +491,7 @@ void test_button_reed_switch_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, pin, 50, "Button 7");
+  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, 1, 50, "Button 7");
   button->setAction(1, -1, -1);
   pin.digitalWrite(LOW); // initially LOW - window closed
   button->attachPin();
@@ -518,7 +518,7 @@ void test_button_reed_switch_only()
 void test_button_to_relay_state()
 {
   FakePin pin(1);
-  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, pin, 50, "Button 8");
+  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 8");
   buttonMono->attachPin();
 
   TEST_ASSERT_FALSE_MESSAGE(buttonMono->getRelayState(true), "[1] getRelayState MONO");
@@ -526,7 +526,7 @@ void test_button_to_relay_state()
 
   delete buttonMono;
 
-  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, pin, 50, "Button 9");
+  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, 1, 50, "Button 9");
   buttonBi->attachPin();
 
   TEST_ASSERT_FALSE_MESSAGE(buttonBi->getRelayState(true), "[3] getRelayState BI");
@@ -534,7 +534,7 @@ void test_button_to_relay_state()
 
   delete buttonBi;
 
-  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, pin, 50, "Button 10");
+  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50, "Button 10");
   buttonDingDong->attachPin();
 
   pin.digitalWrite(HIGH); // OFF
@@ -552,7 +552,7 @@ void test_button_to_relay_state()
 
   delete buttonDingDong;
 
-  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, pin, 50, "Button 11");
+  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50, "Button 11");
   buttonReedSwitch->attachPin();
 
   pin.digitalWrite(LOW); // CLOSED

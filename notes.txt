@@ -28,3 +28,4 @@ TODO:
 - wyrzucić walidację z arduino
 - stringi do PROGMEM
 - konfiguracja do PROGMEM??
+- limitowanie mocy (power cap)

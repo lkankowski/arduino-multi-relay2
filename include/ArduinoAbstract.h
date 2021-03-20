@@ -2,6 +2,9 @@
 
 #include <stdint.h>
 
+#define xstr(a) str(a)
+#define str(a) #a
+
 #ifdef ARDUINO
 #include <Arduino.h>
 
@@ -16,15 +19,6 @@
   #define USE_EXPANDER
   #include <Wire.h>    // Required for I2C communication
   #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
-#endif
-
-#ifdef USE_EXPANDER
-  const int gNumberOfExpanders = sizeof(expanderAddresses);
-  #if defined(PCF8574_H)
-    PCF8574 gExpander[gNumberOfExpanders];
-  #elif defined(_Adafruit_MCP23017_H_)
-    Adafruit_MCP23017 gExpander[gNumberOfExpanders];
-  #endif
 #endif
 
 #endif //ARDUINO
@@ -46,15 +40,38 @@ namespace lkankowski {
   class ArduinoPin : public PinInterface
   {
     public:
-      ArduinoPin(uint8_t);
+      explicit ArduinoPin(uint8_t);
 
-      void pinMode(uint8_t mode) const;
-      int digitalRead() const;
-      void digitalWrite(uint8_t val) const;
+      void pinMode(uint8_t mode) const override;
+      int digitalRead() const override;
+      void digitalWrite(uint8_t val) const override;
+      static uint8_t digitalRead(uint8_t);
       
     private:
       int _pin;
   };
+
+
+  #ifdef EXPANDER_PCF8574
+
+    class PCF8574Pin : public PinInterface
+    {
+      public:
+        explicit PCF8574Pin(uint8_t);
+
+        void pinMode(uint8_t mode) const override;
+        int digitalRead() const override;
+        void digitalWrite(uint8_t val) const override;
+        
+      private:
+        int _pin;
+          const int gNumberOfExpanders = sizeof(expanderAddresses);
+
+        static PCF8574 _expander[gNumberOfExpanders];
+        static uint8_t * _expanderAddresses;
+    };
+    
+  #endif
 
   #ifndef ARDUINO
   class FakePin : public PinInterface
@@ -62,9 +79,9 @@ namespace lkankowski {
     public:
       FakePin(uint8_t);
 
-      void pinMode(uint8_t mode) const;
-      int digitalRead() const;
-      void digitalWrite(uint8_t val) const;
+      void pinMode(uint8_t mode) const override;
+      int digitalRead() const override;
+      void digitalWrite(uint8_t val) const override;
       
       static uint8_t _mode[10];
       static uint8_t _state[10];
@@ -77,7 +94,7 @@ namespace lkankowski {
   class PinCreator
   {
     public:
-      static PinInterface& create(int pin);
+      static PinInterface * create(int pin);
     
     private:
       PinCreator() {};
@@ -98,6 +115,19 @@ namespace lkankowski {
 #define INPUT_PULLUP 0x2
 
 unsigned long millis(void);
+void delay(int);
+
+class SerialClass
+{
+  public:
+    void print(const char *);
+    void print(int);
+    void println(const char *);
+    void println(int);
+};
+
+extern SerialClass Serial;
+
 
 #if defined(BOARD_TARGET_ATMEGA2560)
   #undef LED_BUILTIN

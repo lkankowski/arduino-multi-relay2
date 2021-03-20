@@ -15,8 +15,8 @@ namespace lkankowski {
   class Eeprom : public EepromInterface
   {
   public:
-    uint8_t read(int idx);
-    void write(int idx, uint8_t val);
+    uint8_t read(int idx) override;
+    void write(int idx, uint8_t val) override;
 
     #ifndef ARDUINO
       static uint8_t _mem[11];
