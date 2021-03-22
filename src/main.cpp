@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <assert.h>
-#include <EEPROM.h>
 #include <Relay.h>
 #include <Button.h>
 #define MY_GATEWAY_SERIAL
@@ -105,8 +104,8 @@ void before() {
     }
     printf_P(PSTR("# %lu Debug startup - EEPROM (first value is version, relay state starts at %i\n"), debugCounter++, RELAY_STATE_STORAGE);
     printf_P(PSTR("# %lu > "), debugCounter++);
-    for (int relayNum = 0; relayNum < gNumberOfRelays+1; relayNum++) {
-      printf("%i,", EEPROM.read(relayNum));
+    for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
+      printf("%i,", loadState(relayNum));
     }
     printf("\n");
     printf_P(PSTR("# %lu Debug startup - buttons pin state\n"), debugCounter++);
@@ -122,7 +121,7 @@ void before() {
   #endif
 
   // validate config
-  #ifdef USE_EXPANDER
+  #ifdef USE_EXPANDER_CHECK
     //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
       RelayConfigDef relayConfig = {};
@@ -167,7 +166,7 @@ void before() {
   }
 
   // if version has changed, reset state of all relays
-  bool versionChangeResetState = (CONFIG_VERSION == EEPROM.read(0) ) ? false : true;
+  bool versionChangeResetState = (CONFIG_VERSION == loadState(0)) ? false : true;
 
   #ifdef USE_EXPANDER
     /* Start I2C bus and PCF8574 instance */
@@ -188,12 +187,13 @@ void before() {
 
     gRelay[relayNum].initialize(relayNum, relayConfig.sensorId, relayConfig.relayDescription);
     gRelay[relayNum].attachPin(relayConfig.relayPin);
-    gRelay[relayNum].setModeAndStartupState(relayConfig.relayOptions, versionChangeResetState);
+    gRelay[relayNum].setModeAndStartupState(relayConfig.relayOptions, false);
     gRelay[relayNum].start();
   }
+  // printf("versionChangeResetState, CONFIG_VERSION, EEPROM.read %i; %i; %i\n", versionChangeResetState, CONFIG_VERSION, loadState(0));
   if (versionChangeResetState) {
     // version has changed, so store new version in eeporom
-    EEPROM.write(0, CONFIG_VERSION);
+    saveState(0, CONFIG_VERSION);
   }
 }; // before()
 
@@ -330,12 +330,12 @@ void receive(const MyMessage &message) {
       } else if (debugCommand == 4) { // dump EEPROM
         printf_P(PSTR("# Dump EEPROM: "));
         for (int relayNum = 0; relayNum < gNumberOfRelays+RELAY_STATE_STORAGE; relayNum++) {
-          printf("%i,",EEPROM.read(relayNum));
+          printf("%i,",loadState(relayNum));
         }
         printf("\n");
       } else if (debugCommand == 5) { // clear EEPROM & reset
         for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-          EEPROM.write(RELAY_STATE_STORAGE + relayNum, 0);
+          saveState(RELAY_STATE_STORAGE + relayNum, 0);
         }
         resetFunc();
       } else if (debugCommand == 6) { // reset

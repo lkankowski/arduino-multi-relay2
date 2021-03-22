@@ -1,6 +1,8 @@
 #include <Relay.h>
 #include <Arduino.h>
-#include <EEPROM.h>
+
+void saveState(const uint8_t pos, const uint8_t value);
+uint8_t loadState(const uint8_t pos);
 
 using namespace lkankowski;
 
@@ -74,9 +76,9 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
       _hasStartupOverride = true;
     } else {
         // Set relay to last known state (using eeprom storage)
-        _state = EEPROM.read(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
+        _state = loadState(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
         if (resetState && _state) {
-            EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, 0);
+            saveState(RELAY_STATE_STORAGE + _eepromIndex, 0);
             _state = false;
       }
     }
@@ -107,7 +109,7 @@ bool Relay::changeState(bool state) {
     #endif
 
     if (! _hasStartupOverride && stateHasChanged) {
-        EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
+        saveState(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
     }
 
     if (_isImpulse && stateHasChanged) {
