@@ -1,6 +1,8 @@
 #include <Relay.h>
 #include <Arduino.h>
-#include <EEPROM.h>
+
+void saveState(const uint8_t pos, const uint8_t value);
+uint8_t loadState(const uint8_t pos);
 
 using namespace lkankowski;
 
@@ -59,7 +61,7 @@ void Relay::attachPin(int pin) {
 
 
 void Relay::setModeAndStartupState(int mode, bool resetState) {
-    
+
     _triggerState = mode & RELAY_TRIGGER_HIGH;
 
     if (mode & RELAY_IMPULSE) {
@@ -74,9 +76,9 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
       _hasStartupOverride = true;
     } else {
         // Set relay to last known state (using eeprom storage)
-        _state = EEPROM.read(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
+        _state = loadState(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
         if (resetState && _state) {
-            EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, 0);
+            saveState(RELAY_STATE_STORAGE + _eepromIndex, 0);
             _state = false;
       }
     }
@@ -86,9 +88,10 @@ void Relay::setModeAndStartupState(int mode, bool resetState) {
 bool Relay::changeState(bool state) {
 
     #ifdef DEBUG_STARTUP
-      Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
-                     +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex
-                     +", (uint8_t) state="+((uint8_t) state)+", _isImpulse="+_isImpulse);
+      printf_P(
+        PSTR("# %lu:%lu Relay::changeState: old_state=%d, new_state=%d, _hasStartupOverride=%d, _eepromIndex=%i, (uint8_t) state=%d, _isImpulse=%d\n"),
+        debugCounter++, millis(), _state, state, _hasStartupOverride, _eepromIndex, (uint8_t) state, _isImpulse
+      );
     #endif
     bool stateHasChanged = state != _state;
     uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
@@ -106,7 +109,7 @@ bool Relay::changeState(bool state) {
     #endif
 
     if (! _hasStartupOverride && stateHasChanged) {
-        EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
+        saveState(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
     }
 
     if (_isImpulse && stateHasChanged) {
