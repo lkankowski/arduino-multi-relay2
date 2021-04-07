@@ -10,7 +10,7 @@ HardwareSwitchInterface * HardwareSwitchInterface::create(int type, int pin, uns
 
 
 DebouncedSwitch::DebouncedSwitch(int pin, unsigned int debounceInterval, uint8_t stateForPressed)
-  : _pin(PinCreator::create(pin))
+  : _pin(PinCreator::instance()->create(pin))
   , _debounceInterval(debounceInterval)
   , _previousMillis(0)
   , _unstableState(false)

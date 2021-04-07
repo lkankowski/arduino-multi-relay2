@@ -16,6 +16,17 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
 // Configuration in separate file
 #include "config.h"
 
+#ifdef USE_EXPANDER
+  #if defined(EXPANDER_PCF8574)
+    PCF8574 gExpander[sizeof(gExpanderAddresses)];
+  #elif defined(EXPANDER_MCP23017)
+    Adafruit_MCP23017 gExpander[sizeof(gExpanderAddresses)];
+  #endif
+  PinCreator gPinCreator(gExpander, gExpanderAddresses, sizeof(gExpanderAddresses));
+#else
+  PinCreator gPinCreator();
+#endif
+
 int gTurnOffDependentsCounter = 2000;
 
 #ifdef DEBUG_STATS
@@ -33,8 +44,8 @@ MyMessage myMessage; // MySensors - Sending Data
   MyMessage debugMessage(255, V_TEXT);
 #endif
 
-RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
-ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 
 Eeprom gEeprom;
 RelayService gRelayService(gRelayConfigRef, gEeprom);
@@ -56,7 +67,7 @@ void before()
 
     #ifdef USE_EXPANDER
       Serial.println(String("# ")+(debugCounter++)+" Debug startup - expander config");
-      for(int i = 0; i < gNumberOfExpanders; i++) {
+      for(int i = 0; i < sizeof(gExpanderAddresses); i++) {
         Serial.print(expanderAddresses[i]);
         Serial.print(",");
       }
@@ -100,7 +111,7 @@ void before()
     for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin & 0xff00) {
-        if (((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)) {
+        if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial.println(String("Configuration failed - expander no or number of pins out of range for relay: ") + relayNum);
           delay(1000);
           assert(0);
@@ -113,7 +124,7 @@ void before()
     #ifdef USE_EXPANDER
       int pin = gButtonConfig[buttonNum].buttonPin;
       if (pin & 0xff00) {
-        if (((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)) {
+        if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial.println(String("Configuration failed - expander no or number of pins out of range for button: ") + buttonNum);
           delay(1000);
           assert(0);
@@ -137,13 +148,7 @@ void before()
   bool versionChangeResetState = (CONFIG_VERSION == gEeprom.read(0) ) ? false : true;
   
   #ifdef USE_EXPANDER
-    /* Start I2C bus and PCF8574 instance */
-    for(int i = 0; i < gNumberOfExpanders; i++) {
-      gExpander[i].begin(expanderAddresses[i]);
-    }
-
-    Relay::expanderInit(gExpander);
-    lkankowski::Button::expanderInit(gExpander);
+    gPinCreator.initExpanders();
   #endif
 
   // initialize relays
@@ -306,8 +311,8 @@ void receive(const MyMessage &message)
         }
       } else if (debugCommand == 4) { // dump EEPROM
         Serial.print("# Dump EEPROM: ");
-        for (int relayNum = 0; relayNum < gRelayConfigRef.size+RELAY_STATE_STORAGE; relayNum++) {
-          Serial.print(gEeprom.read(relayNum));
+        for (int eepromIdx = 0; eepromIdx < gEeprom.length(); eepromIdx++) {
+          Serial.print(gEeprom.read(eepromIdx));
           Serial.print(",");
         }
         Serial.println();

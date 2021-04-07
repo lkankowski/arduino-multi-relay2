@@ -20,7 +20,6 @@ TODO:
 - refactoring Button w main i ButtonService
 - redukcja typów: np. id przekaźników, iteratory, itp. na uint8_t
 - dodanie "inline" tam gdzie ma sens
-- implementacja ekspanderów - HardwareSwitchInterface
 - przetestować ekspandery
 - fake expander?
 - wywalenie "String"???
@@ -29,3 +28,10 @@ TODO:
 - stringi do PROGMEM
 - konfiguracja do PROGMEM??
 - limitowanie mocy (power cap)
+- akcje callback jak w OneButton:
+  // ----- Callback function types -----
+
+  extern "C" {
+  typedef void (*callbackFunction)(void);
+  typedef void (*parameterizedCallbackFunction)(void *);
+  }

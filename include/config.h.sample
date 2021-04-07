@@ -22,7 +22,7 @@ const unsigned long BUTTON_DOUBLE_CLICK_INTERVAL = 350;
 const unsigned long BUTTON_LONG_PRESS_INTERVAL = 800;
 
 #ifdef USE_EXPANDER
-  uint8_t expanderAddresses[] = {0x20};
+  uint8_t gExpanderAddresses[] = {0x20};
 #endif
 
 const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";

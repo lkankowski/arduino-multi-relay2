@@ -15,7 +15,7 @@ RelayService::RelayService(const RelayConfigRef & relayConfig, EepromInterface &
   _pin = new PinInterface*[_relayConfig.size];
   _relays = new RelayPtr[_relayConfig.size];
   for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
-    _pin[relayNum] = PinCreator::create(relayConfig.config[relayNum].relayPin);
+    _pin[relayNum] = PinCreator::instance()->create(relayConfig.config[relayNum].relayPin);
     _relays[relayNum] = new Relay(_pin[relayNum]);
   }
   _storeRelayToEEPROM = new bool[_relayConfig.size];

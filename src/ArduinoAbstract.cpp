@@ -2,17 +2,12 @@
 
 using namespace lkankowski;
 
+
+PinCreator * PinCreator::_instance = nullptr;
+
+
 #ifdef ARDUINO
 #include <Arduino.h>
-
-#ifdef USE_EXPANDER
-  const int gNumberOfExpanders = sizeof(gExpanderAddresses);
-  #if defined(PCF8574_H)
-    PCF8574 gExpander[gNumberOfExpanders];
-  #elif defined(_Adafruit_MCP23017_H_)
-    Adafruit_MCP23017 gExpander[gNumberOfExpanders];
-  #endif
-#endif
 
 
 ArduinoPin::ArduinoPin(uint8_t pin)
@@ -20,12 +15,12 @@ ArduinoPin::ArduinoPin(uint8_t pin)
   _pin = pin;
 };
 
-void ArduinoPin::pinMode(uint8_t val) const
+void ArduinoPin::pinMode(uint8_t mode) const
 {
-  ::pinMode(_pin, val);
+  ::pinMode(_pin, mode);
 };
 
-int ArduinoPin::digitalRead() const
+uint8_t ArduinoPin::digitalRead() const
 {
   return ::digitalRead(_pin);
 };
@@ -42,42 +37,113 @@ uint8_t ArduinoPin::digitalRead(uint8_t pin)
 
 
 #ifdef EXPANDER_PCF8574
-PCF8574Pin::ArduinoPin(uint8_t pin)
+PCF8574Pin::PCF8574Pin(uint8_t pin, PCF8574& expander)
+  : _pin(pin)
+  , _expander(expander)
+{};
+
+void PCF8574Pin::pinMode(uint8_t mode) const
 {
-  _pin = pin;
+  _expander.pinMode(_pin, mode);
 };
 
-void PCF8574Pin::pinMode(uint8_t val) const
+uint8_t PCF8574Pin::digitalRead() const
 {
-  ::pinMode(_pin, val);
-};
-
-int PCF8574Pin::digitalRead() const
-{
-  return ::digitalRead(_pin);
+  return _expander.digitalRead(_pin);
 };
 
 void PCF8574Pin::digitalWrite(uint8_t val) const
 {
-  ::digitalWrite(_pin, val);
+  _expander.digitalWrite(_pin, val);
+};
+#endif
+
+
+#ifdef EXPANDER_MCP23017
+MCP23017Pin::MCP23017Pin(uint8_t pin, Adafruit_MCP23017& expander)
+  : _pin(pin)
+  , _expander(expander)
+{};
+
+
+void MCP23017Pin::pinMode(uint8_t mode) const
+{
+  if (mode == INPUT_PULLUP) {
+    _expander.pinMode(_pin, INPUT);
+    _expander.pullUp(_pin, HIGH);
+  } else {
+    _expander.pinMode(_pin, mode);
+  }
+};
+
+
+uint8_t MCP23017Pin::digitalRead() const
+{
+  return _expander.digitalRead(_pin);
+};
+
+
+void MCP23017Pin::digitalWrite(uint8_t val) const
+{
+  _expander.digitalWrite(_pin, val);
 };
 #endif
 
 
 PinInterface * PinCreator::create(int pin)
 {
-  if (pin < 0x100 ) return new ArduinoPin(pin);
+  if (pin < 0x100) return new ArduinoPin(pin);
   #ifdef EXPANDER_PCF8574
     uint8_t expanderNo = (pin >> 8) - 1;
-    return new PCF8574Pin(pin&0xff, );
-
-    // Expander:
-    // - instance
-    // - begin()
-    // - pinMode
-    // - digital Read/Write
+    return new PCF8574Pin(pin&0xff, _expanders[expanderNo]);
+  #endif
+  #ifdef EXPANDER_MCP23017
+    uint8_t expanderNo = (pin >> 8) - 1;
+    return new MCP23017Pin(pin&0xff, _expanders[expanderNo]);
   #endif
   return nullptr;
+};
+
+
+PinCreator::PinCreator()
+{
+  _instance = this;
+};
+
+
+#ifdef EXPANDER_PCF8574
+PinCreator::PinCreator(PCF8574 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders)
+  : _expanders(expander)
+  , _expanderAddresses(expanderAddresses)
+  , _numberOfExpanders(numberOfExpanders)
+{
+  _instance = this;
+};
+#endif
+
+
+#ifdef EXPANDER_MCP23017
+PinCreator::PinCreator(Adafruit_MCP23017 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders)
+  : _expanders(expander)
+  , _expanderAddresses(expanderAddresses)
+  , _numberOfExpanders(numberOfExpanders)
+{
+  _instance = this;
+};
+#endif
+
+
+PinCreator * PinCreator::instance()
+{
+  return _instance;
+};
+
+
+void PinCreator::initExpanders()
+{
+  for(int i = 0; i < _numberOfExpanders; i++) {
+    _expanders[i].begin(_expanderAddresses[i]);
+  }
 };
 
 
@@ -94,7 +160,7 @@ void FakePin::pinMode(uint8_t val) const
 //  if (val == INPUT_PULLUP) _state[pin] = HIGH;
 };
 
-int FakePin::digitalRead() const
+uint8_t FakePin::digitalRead() const
 {
   return _state[_pin];
 };
@@ -102,6 +168,18 @@ int FakePin::digitalRead() const
 void FakePin::digitalWrite(uint8_t val) const
 {
   _state[_pin] = val;
+};
+
+
+PinCreator::PinCreator()
+{
+  _instance = this;
+};
+
+
+PinCreator * PinCreator::instance()
+{
+  return _instance;
 };
 
 
@@ -114,14 +192,7 @@ uint8_t FakePin::_mode[]  = {0,0,0,0,0,0,0,0,0,0};
 uint8_t FakePin::_state[] = {0,0,0,0,0,0,0,0,0,0};
 
 
-/*
-unsigned long millis(void)
-{
-
-};
-*/
-
-void delay(int) {};
+//void delay(int) {};
 
 #include <iostream>
 

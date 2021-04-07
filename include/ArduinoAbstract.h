@@ -32,7 +32,7 @@ namespace lkankowski {
       virtual ~PinInterface() {};
 
       virtual void pinMode(uint8_t mode) const = 0;
-      virtual int digitalRead() const = 0;
+      virtual uint8_t digitalRead() const = 0;
       virtual void digitalWrite(uint8_t val) const = 0;
   };
 
@@ -43,12 +43,12 @@ namespace lkankowski {
       explicit ArduinoPin(uint8_t);
 
       void pinMode(uint8_t mode) const override;
-      int digitalRead() const override;
+      uint8_t digitalRead() const override;
       void digitalWrite(uint8_t val) const override;
       static uint8_t digitalRead(uint8_t);
       
     private:
-      int _pin;
+      uint8_t _pin;
   };
 
 
@@ -57,18 +57,33 @@ namespace lkankowski {
     class PCF8574Pin : public PinInterface
     {
       public:
-        explicit PCF8574Pin(uint8_t);
+        explicit PCF8574Pin(uint8_t, PCF8574&);
 
         void pinMode(uint8_t mode) const override;
-        int digitalRead() const override;
+        uint8_t digitalRead() const override;
         void digitalWrite(uint8_t val) const override;
         
       private:
-        int _pin;
-          const int gNumberOfExpanders = sizeof(expanderAddresses);
+        uint8_t _pin;
+        PCF8574& _expander;
+    };
+    
+  #endif
 
-        static PCF8574 _expander[gNumberOfExpanders];
-        static uint8_t * _expanderAddresses;
+  #ifdef EXPANDER_MCP23017
+
+    class MCP23017Pin : public PinInterface
+    {
+      public:
+        explicit MCP23017Pin(uint8_t, Adafruit_MCP23017&);
+
+        void pinMode(uint8_t mode) const override;
+        uint8_t digitalRead() const override;
+        void digitalWrite(uint8_t val) const override;
+        
+      private:
+        uint8_t _pin;
+        Adafruit_MCP23017& _expander;
     };
     
   #endif
@@ -80,24 +95,42 @@ namespace lkankowski {
       FakePin(uint8_t);
 
       void pinMode(uint8_t mode) const override;
-      int digitalRead() const override;
+      uint8_t digitalRead() const override;
       void digitalWrite(uint8_t val) const override;
       
       static uint8_t _mode[10];
       static uint8_t _state[10];
     
     private:
-      int _pin;
+      uint8_t _pin;
   };
   #endif
 
   class PinCreator
   {
     public:
-      static PinInterface * create(int pin);
+      PinCreator();
+      #ifdef EXPANDER_PCF8574
+        PinCreator(PCF8574 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders);
+      #endif
+      #ifdef EXPANDER_MCP23017
+        PinCreator(Adafruit_MCP23017 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders);
+      #endif
+
+      static PinCreator * instance();
+
+      PinInterface * create(int pin);
+      void initExpanders();
     
     private:
-      PinCreator() {};
+      static PinCreator * _instance;
+      #if defined(EXPANDER_PCF8574)
+        PCF8574 * _expanders;
+      #elif defined(EXPANDER_MCP23017)
+        Adafruit_MCP23017 * _expanders;
+      #endif
+      const uint8_t * _expanderAddresses;
+      uint8_t _numberOfExpanders;
   };
 
 } // namespace lkankowski
