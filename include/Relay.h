@@ -44,6 +44,8 @@ class Relay {
     int getSensorId() { return(_sensorId); };
     static bool isImpulsePending() { return(_impulsePending > 0); };
     bool impulseProcess();
+    void reportAsSensor() { _reportAsSensor = true; };
+    bool isSensor() { return _reportAsSensor; };
     const char * getDescription() { return(_description); };
     #if defined(EXPANDER_PCF8574)
       static void expanderInit(PCF8574 * exp) { Relay::_expander = exp; };
@@ -63,6 +65,7 @@ class Relay {
     unsigned long _impulseStartMillis;
     static int _impulsePending;
     static unsigned long _impulseInterval;
+    bool _reportAsSensor;
     #if defined(EXPANDER_PCF8574)
       static PCF8574 * _expander;
     #elif defined(EXPANDER_MCP23017)

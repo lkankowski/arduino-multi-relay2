@@ -29,6 +29,7 @@ Relay::Relay()
     , _triggerState(0)
     , _isImpulse(false)
     , _impulseStartMillis(0)
+    , _reportAsSensor(false)
 {};
 
 

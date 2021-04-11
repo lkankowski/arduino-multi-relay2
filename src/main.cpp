@@ -179,13 +179,6 @@ void before() {
 
 // executed AFTER mysensors has been initialised
 void setup() {
-  // Send state to MySensor Gateway
-  myMessage.setType(V_STATUS);
-  for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    myMessage.setSensor(gRelay[relayNum].getSensorId());
-    send(myMessage.set(gRelay[relayNum].getState())); // send current state
-  }
-
   // Setup buttons
   lkankowski::Button::Button::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
   lkankowski::Button::Button::setMonoStableTrigger(MONO_STABLE_TRIGGER);
@@ -193,11 +186,23 @@ void setup() {
   for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
     
     gButton[buttonNum].initialize(gButtonConfig[buttonNum].buttonType, gButtonConfig[buttonNum].buttonDescription);
-    gButton[buttonNum].setAction(getRelayNum(gButtonConfig[buttonNum].clickRelayId),
+    int clickActionRelayNum = getRelayNum(gButtonConfig[buttonNum].clickRelayId);
+    gButton[buttonNum].setAction(clickActionRelayNum,
                                  getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
                                  getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     gButton[buttonNum].setDebounceInterval(BUTTON_DEBOUNCE_INTERVAL);
     gButton[buttonNum].attachPin(gButtonConfig[buttonNum].buttonPin);
+    if ((gButtonConfig[buttonNum].buttonType & REED_SWITCH) && (clickActionRelayNum > -1)) {
+      gRelay[clickActionRelayNum].reportAsSensor();
+    }
+  }
+
+  // Send state to MySensor Gateway
+  myMessage.setType(V_STATUS);
+  for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
+    myMessage.setType(gRelay[relayNum].isSensor() ? V_TRIPPED : V_STATUS);
+    myMessage.setSensor(gRelay[relayNum].getSensorId());
+    send(myMessage.set(gRelay[relayNum].getState())); // send current state
   }
 };
 
@@ -221,6 +226,7 @@ void loop() {
         if (millis() > IGNORE_BUTTONS_START_MS) {
       #endif
           if (gRelay[relayNum].changeState(relayState)) {
+            myMessage.setType(gRelay[relayNum].isSensor() ? V_TRIPPED : V_STATUS);
             myMessage.setSensor(gRelay[relayNum].getSensorId());
             send(myMessage.set(relayState));
           }
@@ -262,7 +268,9 @@ void presentation() {
   
   // Register every relay as separate sensor
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    present(gRelay[relayNum].getSensorId(), S_BINARY, gRelay[relayNum].getDescription());
+    present(gRelay[relayNum].getSensorId(),
+            gRelay[relayNum].isSensor() ? S_DOOR : S_BINARY,
+            gRelay[relayNum].getDescription());
   }
 };
 
@@ -281,6 +289,7 @@ void receive(const MyMessage &message) {
       int relayNum = getRelayNum(message.getSensor());
       if (relayNum == -1) return;
       gRelay[relayNum].changeState(message.getBool());
+      myMessage.setType(gRelay[relayNum].isSensor() ? V_TRIPPED : V_STATUS);
       myMessage.setSensor(message.getSensor());
       send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
     #ifdef DEBUG_STATS
