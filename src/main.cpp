@@ -171,14 +171,7 @@ void before() {
     gRelay[relayNum].setModeAndStartupState(gRelayConfig[relayNum].relayOptions, versionChangeResetState);
     gRelay[relayNum].start();
   }
-  if (versionChangeResetState) {
-    // version has changed, so store new version in eeporom
-    EEPROM.write(0, CONFIG_VERSION);
-  }
-}; // before()
 
-// executed AFTER mysensors has been initialised
-void setup() {
   // Setup buttons
   lkankowski::Button::Button::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
   lkankowski::Button::Button::setMonoStableTrigger(MONO_STABLE_TRIGGER);
@@ -192,11 +185,22 @@ void setup() {
                                  getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     gButton[buttonNum].setDebounceInterval(BUTTON_DEBOUNCE_INTERVAL);
     gButton[buttonNum].attachPin(gButtonConfig[buttonNum].buttonPin);
-    if ((gButtonConfig[buttonNum].buttonType & REED_SWITCH) && (clickActionRelayNum > -1)) {
+    if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelay[clickActionRelayNum].reportAsSensor();
+      gRelay[clickActionRelayNum].changeState(gButton[buttonNum].getRelayState(false));
+    } else if (((gButtonConfig[buttonNum].buttonType & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
+      gRelay[clickActionRelayNum].changeState(gButton[buttonNum].getRelayState(false));
     }
   }
 
+  if (versionChangeResetState) {
+    // version has changed, so store new version in eeporom
+    EEPROM.write(0, CONFIG_VERSION);
+  }
+}; // before()
+
+// executed AFTER mysensors has been initialised
+void setup() {
   // Send initial state to MySensor Controller
   myMessage.setType(V_STATUS);
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {

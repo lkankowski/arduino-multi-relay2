@@ -93,9 +93,9 @@ bool lkankowski::Button::getRelayState(bool relayState) {
   if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
     result = !relayState;
   } else if (_type == DING_DONG) {
-    result = _physicalButton.read();
-  } else if (_type == REED_SWITCH) {
     result = ! _physicalButton.read();
+  } else if (_type == REED_SWITCH) {
+    result = _physicalButton.read();
   }
   return(result);
 };
