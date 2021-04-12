@@ -197,11 +197,15 @@ void setup() {
     }
   }
 
-  // Send state to MySensor Gateway
+  // Send initial state to MySensor Controller
   myMessage.setType(V_STATUS);
   for (int relayNum = 0; relayNum < gNumberOfRelays; relayNum++) {
-    myMessage.setType(gRelay[relayNum].isSensor() ? V_TRIPPED : V_STATUS);
     myMessage.setSensor(gRelay[relayNum].getSensorId());
+    if (gRelay[relayNum].isSensor()) {
+      myMessage.setType(V_ARMED);
+      send(myMessage.set(true));
+    }
+    myMessage.setType(gRelay[relayNum].isSensor() ? V_TRIPPED : V_STATUS);
     send(myMessage.set(gRelay[relayNum].getState())); // send current state
   }
 };
