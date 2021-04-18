@@ -281,8 +281,10 @@ void receive(const MyMessage &message) {
       int relayNum = getRelayNum(message.getSensor());
       if (relayNum == -1) return;
       gRelay[relayNum].changeState(message.getBool());
-      myMessage.setSensor(message.getSensor());
-      send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
+      if (! message.isAck()) {
+        myMessage.setSensor(message.getSensor());
+        send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
+      }
     #ifdef DEBUG_STATS
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
