@@ -312,14 +312,12 @@ void receive(const MyMessage &message)
       } else if (debugCommand == 4) { // dump EEPROM
         Serial.print("# Dump EEPROM: ");
         for (int eepromIdx = 0; eepromIdx < gEeprom.length(); eepromIdx++) {
-          Serial.print(gEeprom.read(eepromIdx));
+          Serial.print(gEeprom.dump(eepromIdx));
           Serial.print(",");
         }
         Serial.println();
       } else if (debugCommand == 5) { // clear EEPROM & reset
-        for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
-          gEeprom.write(RELAY_STATE_STORAGE + relayNum, 0);
-        }
+        gEeprom.clean();
         resetFunc();
       } else if (debugCommand == 6) { // reset
         resetFunc();

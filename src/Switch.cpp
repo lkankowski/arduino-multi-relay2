@@ -28,6 +28,7 @@ DebouncedSwitch::~DebouncedSwitch()
 void DebouncedSwitch::attachPin()
 {
   _pin->pinMode(INPUT_PULLUP);
+  _unstableState = _debouncedState = _pin->digitalRead() == _stateForPressed;
 };
 
 

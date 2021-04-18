@@ -20,7 +20,10 @@ namespace lkankowski {
     void write(int idx, uint8_t val) override;
     int length() const override;
 
-    #ifndef ARDUINO
+    #ifdef ARDUINO
+      uint8_t dump(int idx) const;
+      void clean() const;
+    #else
       static uint8_t _mem[11];
     #endif
   };

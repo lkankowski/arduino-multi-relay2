@@ -16,7 +16,6 @@ enum ButtonType {
 class ButtonInterface
 {
   public:
-    ButtonInterface(HardwareSwitchInterface *, const char * const);
     virtual ~ButtonInterface();
 
     virtual int checkEvent(unsigned long) = 0;
@@ -30,6 +29,7 @@ class ButtonInterface
     static ButtonInterface * create(ButtonType, int, unsigned int, const char * const);
 
   protected:
+    ButtonInterface(HardwareSwitchInterface *, const char * const);
     virtual int calculateEvent(bool, unsigned long) = 0;
 
     enum ButtonState {
@@ -68,14 +68,15 @@ typedef ButtonInterface* ButtonPtr;
 
 class MonoStableButton : public ButtonInterface
 {
-  public:
-    MonoStableButton(HardwareSwitchInterface *, const char * const);
+  friend class ButtonInterface;
 
+  public:
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
     static void clickTriggerWhenPressed(bool);
 
   protected:
+    MonoStableButton(HardwareSwitchInterface *, const char * const);
     int calculateEvent(bool, unsigned long) override;
 
     static bool _clickTriggerWhenPressed;
@@ -84,39 +85,42 @@ class MonoStableButton : public ButtonInterface
 
 class BiStableButton : public ButtonInterface
 {
-  public:
-    BiStableButton(HardwareSwitchInterface *, const char * const);
+  friend class ButtonInterface;
 
+  public:
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
 
   protected:
+    BiStableButton(HardwareSwitchInterface *, const char * const);
     int calculateEvent(bool, unsigned long) override;
 };
 
 
 class DingDongButton : public ButtonInterface
 {
-  public:
-    DingDongButton(HardwareSwitchInterface *, const char * const);
+  friend class ButtonInterface;
 
+  public:
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
 
   protected:
+    DingDongButton(HardwareSwitchInterface *, const char * const);
     int calculateEvent(bool, unsigned long) override;
 };
 
 
 class ReedSwitch : public ButtonInterface
 {
-  public:
-    ReedSwitch(HardwareSwitchInterface *, const char * const);
+  friend class ButtonInterface;
 
+  public:
     int checkEvent(unsigned long) override;
     bool getRelayState(bool) override;
 
   protected:
+    ReedSwitch(HardwareSwitchInterface *, const char * const);
     int calculateEvent(bool, unsigned long) override;
 };
 

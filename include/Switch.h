@@ -24,8 +24,9 @@ class HardwareSwitchInterface
 
 class DebouncedSwitch : public HardwareSwitchInterface
 {
+  friend class HardwareSwitchInterface;
+  
   public:
-    DebouncedSwitch(int, unsigned int, uint8_t);
     virtual ~DebouncedSwitch();
 
     void attachPin() override;
@@ -33,6 +34,8 @@ class DebouncedSwitch : public HardwareSwitchInterface
     bool getState() const override;
   
   private:
+    DebouncedSwitch(int, unsigned int, uint8_t);
+
     PinInterface * _pin;
     const unsigned int _debounceInterval;
     unsigned long _previousMillis;

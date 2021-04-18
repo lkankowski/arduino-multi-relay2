@@ -139,12 +139,14 @@ PinCreator * PinCreator::instance()
 };
 
 
+#ifdef USE_EXPANDER
 void PinCreator::initExpanders()
 {
   for(int i = 0; i < _numberOfExpanders; i++) {
     _expanders[i].begin(_expanderAddresses[i]);
   }
 };
+#endif
 
 
 #else

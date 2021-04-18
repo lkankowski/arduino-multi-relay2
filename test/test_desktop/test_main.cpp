@@ -255,55 +255,110 @@ void test_relay_dependsOn()
 };
 
 
+void test_switch_startup_pullup()
+{
+  FakePin pin(1);
+  pin.digitalWrite(HIGH);
+  HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
+  hardwareSwitch->attachPin();
+
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(0), "[2] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(100), "[4] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(200), "[5] No switch change");
+
+  delete hardwareSwitch;
+};
+
+
+void test_switch_startup_pullup_bi_on()
+{
+  FakePin pin(1);
+  pin.digitalWrite(LOW);
+  HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
+  hardwareSwitch->attachPin();
+
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[1] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(0), "[2] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(100), "[4] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(200), "[5] No switch change");
+
+  delete hardwareSwitch;
+};
+
+
+void test_switch_startup_pulldown()
+{
+  FakePin pin(1);
+  pin.digitalWrite(LOW);
+  HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, HIGH);
+  hardwareSwitch->attachPin();
+
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(0), "[2] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(100), "[4] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(200), "[5] No switch change");
+
+  delete hardwareSwitch;
+};
+
+
 void test_switch_low()
 {
   FakePin pin(1);
-  DebouncedSwitch hardwareSwitch(1, 50, LOW);
-  hardwareSwitch.attachPin();
   pin.digitalWrite(HIGH);
+  HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
+  hardwareSwitch->attachPin();
 
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[1] Switch should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(0), "[2] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(0), "[2] No switch change");
   pin.digitalWrite(LOW);
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(10), "[3] No switch change");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[4] Switch should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(59), "[5] No switch change");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[6] Switch should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(60), "[7] Switch has changed");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[8] Switch should be ON");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(61), "[9] No switch change");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[10] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[4] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(59), "[5] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[6] Switch should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->update(60), "[7] Switch has changed");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[8] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(61), "[9] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[10] Switch should be ON");
   pin.digitalWrite(HIGH);
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(100), "[11] No switch change");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[12] Switch should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(150), "[13] Switch has changed");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[14] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(100), "[11] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[12] Switch should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->update(150), "[13] Switch has changed");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[14] Switch should be OFF");
+
+  delete hardwareSwitch;
 };
 
 
 void test_switch_high()
 {
   FakePin pin(1);
-  DebouncedSwitch hardwareSwitch(1, 50, HIGH);
-  hardwareSwitch.attachPin();
   pin.digitalWrite(LOW); // pull-down
+  HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, HIGH);
+  hardwareSwitch->attachPin();
 
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[1] Switch should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(0), "[2] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[1] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(0), "[2] No switch change");
   pin.digitalWrite(HIGH);
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(10), "[3] No switch change");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[4] Switch should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(59), "[5] No switch change");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[6] Switch should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(60), "[7] Switch has changed");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[8] Switch should be ON");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(61), "[9] No switch change");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[10] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(10), "[3] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[4] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(59), "[5] No switch change");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[6] Switch should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->update(60), "[7] Switch has changed");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[8] Switch should be ON");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(61), "[9] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[10] Switch should be ON");
   pin.digitalWrite(LOW);
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.update(100), "[11] No switch change");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.getState(), "[12] Switch should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch.update(150), "[13] Switch has changed");
-  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch.getState(), "[14] Switch should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->update(100), "[11] No switch change");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->getState(), "[12] Switch should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(hardwareSwitch->update(150), "[13] Switch has changed");
+  TEST_ASSERT_FALSE_MESSAGE(hardwareSwitch->getState(), "[14] Switch should be OFF");
+
+  delete hardwareSwitch;
 };
 
 
@@ -497,12 +552,12 @@ void test_button_reed_switch_only()
   button->attachPin();
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[1] Button 1 should have pin state LOW");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
 
   // OPEN (reed switch disconnected)
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[2] checkEvent(100) should return -1");
   pin.digitalWrite(HIGH);
   TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[3] checkEvent(100) should return -1");
-  //TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[4] checkEvent(160) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[4] checkEvent(160) should return 1");
   TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(161), "[5] checkEvent(161) should return -1");
 
   // CLOSED (reed switch connected)
@@ -534,10 +589,10 @@ void test_button_to_relay_state()
 
   delete buttonBi;
 
+  pin.digitalWrite(HIGH); // pullup - OFF
   ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50, "Button 10");
   buttonDingDong->attachPin();
 
-  pin.digitalWrite(HIGH); // OFF
   buttonDingDong->checkEvent(0);
   buttonDingDong->checkEvent(100);
   TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(false), "[5] getRelayState DING-DONG");
@@ -552,10 +607,10 @@ void test_button_to_relay_state()
 
   delete buttonDingDong;
 
+  pin.digitalWrite(LOW); // CLOSED
   ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50, "Button 11");
   buttonReedSwitch->attachPin();
 
-  pin.digitalWrite(LOW); // CLOSED
   buttonReedSwitch->checkEvent(600);
   buttonReedSwitch->checkEvent(700);
   TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(false), "[8] getRelayState REED-SWITCH");
@@ -575,6 +630,8 @@ void test_button_to_relay_state()
 
 int main(int argc, char **argv)
 {
+  // std::cout << "Hello!" << std::endl; 
+
   UNITY_BEGIN();
 
   RUN_TEST(test_config_relays);
@@ -583,6 +640,9 @@ int main(int argc, char **argv)
   RUN_TEST(test_relay_startup_eeprom);
   RUN_TEST(test_relay_impulse);
   RUN_TEST(test_relay_dependsOn);
+  RUN_TEST(test_switch_startup_pullup);
+  RUN_TEST(test_switch_startup_pullup_bi_on);
+  RUN_TEST(test_switch_startup_pulldown);
   RUN_TEST(test_switch_low);
   RUN_TEST(test_switch_high);
   RUN_TEST(test_button_mono_only_click_when_pressed);

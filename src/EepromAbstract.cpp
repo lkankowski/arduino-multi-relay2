@@ -5,11 +5,12 @@ using namespace lkankowski;
 #ifdef ARDUINO
 // #include <EEPROM.h>
 #include <avr/io.h>
+#include <avr/eeprom.h>
 extern uint8_t loadState(const uint8_t);
 extern void saveState(const uint8_t, const uint8_t);
 
 
-uint8_t Eeprom::read(int idx)
+uint8_t Eeprom::read(int idx) const
 {
   // return EEPROM.read(idx);
   return loadState(idx);
@@ -22,11 +23,24 @@ void Eeprom::write(int idx, uint8_t val)
 };
 
 
-int Eeprom::length()
+int Eeprom::length() const
 {
   return E2END+1;
 };
 
+
+uint8_t Eeprom::dump(int idx) const
+{
+  return eeprom_read_byte((const uint8_t *) idx);
+};
+
+
+void Eeprom::clean() const
+{
+  for(int i = 0; i <= E2END; i++) {
+    eeprom_write_byte((uint8_t *) i, 0);
+  }
+};
 
 #else
 

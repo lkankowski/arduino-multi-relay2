@@ -120,7 +120,9 @@ namespace lkankowski {
       static PinCreator * instance();
 
       PinInterface * create(int pin);
-      void initExpanders();
+      #ifdef USE_EXPANDER
+        void initExpanders();
+      #endif
     
     private:
       static PinCreator * _instance;
