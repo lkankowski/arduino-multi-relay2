@@ -273,7 +273,7 @@ void receive(const MyMessage &message) {
 
   #ifdef DEBUG_COMMUNICATION
     Serial.println(String("# Incoming message: sensorId=") + message.getSensor() + ", command=" + message.getCommand()
-                 + ", ack=" + message.isAck() + ", echo=" + message.isEcho() + ", type=" + message.getType()
+                 + ", ack=" + message.isAck() + ", echo=" + message.getRequestEcho() + ", type=" + message.getType()
                  + ", payload=" + message.getString());
   #endif
   if (message.getCommand() == C_SET) {
@@ -281,7 +281,7 @@ void receive(const MyMessage &message) {
       int relayNum = getRelayNum(message.getSensor());
       if (relayNum == -1) return;
       gRelay[relayNum].changeState(message.getBool());
-      if (! message.isAck()) {
+      if (! message.getRequestEcho()) {
         myMessage.setSensor(message.getSensor());
         send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
       }
