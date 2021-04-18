@@ -291,16 +291,19 @@ void receive(const MyMessage &message)
       int relayNum = gRelayService.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
       gRelayService.changeState(relayNum, message.getBool(), millis());
-      myMessage.setSensor(message.getSensor());
-      send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
-    #ifdef DEBUG_STATS
+      if (! message.isAck()) {
+        myMessage.setSensor(message.getSensor());
+        send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
+      }
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
       if (debugCommand == 1) {
-        debugStatsOn = true;
-        loopCounter = 0;
-        send(debugMessage.set("toogle debug stats"));
-        gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
+        #ifdef DEBUG_STATS
+          debugStatsOn = true;
+          loopCounter = 0;
+          send(debugMessage.set("toogle debug stats"));
+          gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
+        #endif
       } else if (debugCommand == 2) {
         for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
           Serial.println(gRelayService.toString(relayNum));
@@ -322,7 +325,6 @@ void receive(const MyMessage &message)
       } else if (debugCommand == 6) { // reset
         resetFunc();
       }
-    #endif
     }
   }
 };
