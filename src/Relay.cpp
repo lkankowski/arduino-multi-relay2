@@ -8,13 +8,13 @@ using namespace lkankowski;
 
 
 Relay::Relay(PinInterface * pin)
-    : _pin(pin)
-    , _state(false)
-    , _sensorId(0)
-    , _description(NULL)
-    , _triggerState(0)
-{
-};
+  : _pin(pin)
+  , _state(false)
+  , _sensorId(0)
+  , _description(NULL)
+  , _triggerState(0)
+  , _reportAsSensor(false)
+{};
 
 
 Relay::~Relay()

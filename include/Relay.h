@@ -17,6 +17,8 @@ class Relay {
     bool changeState(bool);
     bool getState() { return(_state); };
     int getSensorId() { return(_sensorId); }; //TODO: refactor: move to RelayService
+    void reportAsSensor() { _reportAsSensor = true; };
+    bool isSensor() { return _reportAsSensor; };
     const char * getDescription() { return(_description); };
 
   private:
@@ -25,6 +27,7 @@ class Relay {
     int _sensorId;
     const char * _description;
     uint8_t _triggerState;
+    bool _reportAsSensor;
 };
 
 typedef Relay* RelayPtr;

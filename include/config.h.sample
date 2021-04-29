@@ -40,7 +40,8 @@ const RelayConfigDef gRelayConfig[] = {
   {4, 5, RELAY_TRIGGER_LOW, -1, "RELAY 4"},
   {5, 6, RELAY_TRIGGER_LOW, -1, "RELAY 5"},
   {6, 7, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, -1, "RELAY 6"},
-  {7, 8, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, -1, "RELAY 7"}
+  {7, 8, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, -1, "RELAY 7"},
+  {8, 9, RELAY_TRIGGER_LOW, -1, "RELAY 8"}
 };
 
 // Buttons config
@@ -55,6 +56,7 @@ const ButtonConfigDef gButtonConfig[] = {
   {A1,  MONO_STABLE, 2,   6, -1, "BUTTON 2"},
   {A2,  MONO_STABLE, 3,   1,  7, "BUTTON 3"},
   {A3,  BI_STABLE,   4,  -1, -1, "BUTTON 4"},
-  {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"}
+  {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"},
+  {A5,  REED_SWITCH, 8,  -1, -1, "BUTTON 6"}
 };
 

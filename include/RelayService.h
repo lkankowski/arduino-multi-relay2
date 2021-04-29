@@ -44,6 +44,8 @@ class RelayService {
     bool isImpulsePending() { return(_impulsePending > 0); };
     bool turnOffDependent(unsigned long);
     int getSensorId(int);
+    void reportAsSensor(int relayNum) { _relays[relayNum]->reportAsSensor(); };
+    bool isSensor(int relayNum) { return _relays[relayNum]->isSensor(); };
     int getRelayNum(int);
     const char * getDescription(int);
     String toString(int);

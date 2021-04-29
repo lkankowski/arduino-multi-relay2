@@ -155,6 +155,27 @@ void before()
   gRelayService.setImpulseInterval(RELAY_IMPULSE_INTERVAL);
   gRelayService.initialize(versionChangeResetState);
   
+  // Setup buttons
+  ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
+  MonoStableButton::clickTriggerWhenPressed(true);
+
+  // gButtonService.setup();
+  for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
+  {
+    int clickActionRelayNum = gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
+    gButtonService.setAction(buttonNum,
+                            clickActionRelayNum,
+                            gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+                            gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    gButtonService.attachPin(buttonNum);
+    if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
+      gRelayService.reportAsSensor(clickActionRelayNum);
+      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
+    } else if (((gButtonConfig[buttonNum].buttonType & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
+      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
+    }
+  }
+
   if (versionChangeResetState) {
     // version has changed, so store new version in eeporom
     gEeprom.write(0, CONFIG_VERSION);
@@ -166,24 +187,10 @@ void before()
 void setup()
 {
   // Send state to MySensor Gateway
-  myMessage.setType(V_STATUS);
   for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
     myMessage.setSensor(gRelayService.getSensorId(relayNum));
+    myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
     send(myMessage.set(gRelayService.getState(relayNum))); // send current state
-  }
-
-  // Setup buttons
-  ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
-  MonoStableButton::clickTriggerWhenPressed(true);
-
-  // gButtonService.setup();
-  for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
-  {
-    gButtonService.setAction(buttonNum,
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
-    gButtonService.attachPin(buttonNum);
   }
 };
 
@@ -219,6 +226,7 @@ void loop()
         if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
       #endif
           if (gRelayService.changeState(relayNum, relayState, loopStartMillis)) {
+            myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
             myMessage.setSensor(gRelayService.getSensorId(relayNum));
             send(myMessage.set(relayState));
           }
@@ -274,7 +282,9 @@ void presentation()
   
   // Register every relay as separate sensor
   for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
-    present(gRelayService.getSensorId(relayNum), S_BINARY, gRelayService.getDescription(relayNum));
+    present(gRelayService.getSensorId(relayNum),
+            gRelayService.isSensor(relayNum) ? S_DOOR : S_BINARY,
+            gRelayService.getDescription(relayNum));
   }
 };
 
@@ -294,6 +304,7 @@ void receive(const MyMessage &message)
       if (relayNum == -1) return;
       gRelayService.changeState(relayNum, message.getBool(), millis());
       if (! message.getRequestEcho()) {
+        myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
         myMessage.setSensor(message.getSensor());
         send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
       }
