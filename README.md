@@ -41,11 +41,26 @@ Params description:
   * MONO_STABLE - for impulse switches, mainly mechanical, which are shorted to the GND when pushed
   * BI_STABLE - state change from LOW to HIGH and HIGH to LOW, used with mechanical and touch buttons
   * DING_DONG - doorbell button, relay is triggered only when button is pushed
-  * REED_SWITCH - door/window sensor, oposite to DING_DONG - state LOW when door/window is closed, HIGH when opened
+  * REED_SWITCH - door/window sensor, oposite to DING_DONG - state OFF when door/window is closed, ON when opened. All relays with at least one REED_SWITCH are reported throught MySensors as S_DOOR sensor.
 * click relay id - sensor id used in relay configuration
 * long-click relay id - sensor id used in relay configuration, -1 when not used
 * double-click relay id - sensor id used in relay configuration, -1 when not used
 * button description - debug only information
+
+
+## Example config with REED_SWITCH
+```
+const RelayConfigDef gRelayConfig[] = {
+  {26, 31, RELAY_TRIGGER_HIGH, "Garage Door"},
+  ...
+};
+const ButtonConfigDef gButtonConfig[] = {
+  {43, REED_SWITCH, 26, -1, -1, "Garage Door reed switch"},
+  ...
+};
+```
+In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home Assistant this relay can be found in entities as binary_sensor.multi_relay_0_26.
+
 
 ## Additional config
 Optional configuration only if you want to customize the script.
