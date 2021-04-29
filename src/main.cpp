@@ -249,7 +249,9 @@ void loop()
     // debug feature
     for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
       if ((gRelayConfig[relayNum].relayPin >= 0) &&
-          (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin) == LOW))) {
+          (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin) ==
+                                                (gRelayConfig[relayNum].relayOptions & RELAY_TRIGGER_HIGH))))
+      {
         Serial.println(String("# Error state relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
                        + ", pin_state=" + ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin));
       }
