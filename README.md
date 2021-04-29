@@ -47,6 +47,144 @@ Params description:
 * double-click relay id - sensor id used in relay configuration, -1 when not used
 * button description - debug only information
 
+## Example config with REED_SWITCH and use expander MCP23017
+```
+const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";
+
+// Relays config - ID and PIN MUST BE UNIQUE (can't be repeated)!
+// Row params: relay ID - [0-254] sensor ID reported on MySensor Gateway
+//             relay pin - pin used for relay, can be expander pin via "E(x, y)" macro
+//             relay options - [RELAY_TRIGGER_LOW|RELAY_TRIGGER_HIGH] {RELAY_STARTUP_ON|RELAY_STARTUP_OFF} {RELAY_IMPULSE}
+//             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, can be empty ("")
+const RelayConfigDef gRelayConfig[] = {
+  {0, 12, RELAY_TRIGGER_HIGH, "Ośw. hol-1 sekcja"},  // WŁ: przy wej. z wiatrołapu (podwójny), przy wejściu do salonu (podówjny), doł przy schodach (podwójny)
+  {1, 11, RELAY_TRIGGER_HIGH, "Ośw. zew. od ogrodu"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {2, 10, RELAY_TRIGGER_HIGH, "Ośw. nad tarasem"},  // WŁ: przy wyjściu na taras (podwójny)
+  {3, 9, RELAY_TRIGGER_HIGH, "Ośw. na tarasie"},  // WŁ: przy wyjściu na taras (podwójny)
+  {4, 8, RELAY_TRIGGER_HIGH, "Ośw. klatka-schody"},  // WŁ: klatka przy schodach dół i góra
+  {5, 7, RELAY_TRIGGER_HIGH, "Ośw. klatka-kinkiety"},  // WŁ: klatka przy schodach dół i góra
+  {6, 6, RELAY_TRIGGER_HIGH, "Ośw. kotłownia"},  // WŁ: przy wejściu z garażu + wyjście z kotłowni na zewnątrz=mostek z garażem
+  {7, 5, RELAY_TRIGGER_HIGH, "Ośw. garaż-1 sekcja"},  // WŁ: przy wejściu do garażu (podwójny), wejście do kotłowni (podwójny)
+  {8, 4, RELAY_TRIGGER_HIGH, "Ośw. garaż-2 sekcja"},  // WŁ: przy wejściu do garażu (podwójny), wejście do kotłowni (podwójny)
+  {9, 3, RELAY_TRIGGER_HIGH, "Ośw. przed wejściem"},   // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {10, 2, RELAY_TRIGGER_HIGH, "Ośw. zew. od kotłowni"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {11, 14, RELAY_TRIGGER_HIGH, "Ośw. zew. przed garażem"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {12, 15, RELAY_TRIGGER_HIGH, "Ośw. wiatrołap"},  // WŁ: wiatrołap przy wejściu do domu i wejściu z wiatrołapu do holu
+  {13, 16, RELAY_TRIGGER_HIGH, "Ośw. salon kinkiety"},  // WŁ: wejście do salonu (podwójny), przy wykuszu
+  {14, 17, RELAY_TRIGGER_HIGH, "Ośw. salon sufit"},  // WŁ: wejście do salonu (podwójny), przy wykuszu
+  {15, 18, RELAY_TRIGGER_HIGH, "Ośw. łazienka_0-kinkiet"},  // WŁ: wejście do łazienki+lustro=zmostkowan
+  {16, 19, RELAY_TRIGGER_HIGH, "Ośw. łazienka_0-sufit"},  // WŁ: wejście do łazienki+lustro=zmostkowan
+  {17, 22, RELAY_TRIGGER_HIGH, "Ośw. salon nad stołem"},  // WŁ: wejście do salonu, przy wykuszu
+  {18, 23, RELAY_TRIGGER_HIGH, "Ośw. gabinet-sufit1"},  // WŁ: wejście do gabinetu (podwójny)
+  {19, 24, RELAY_TRIGGER_HIGH, "Ośw. gabinet-kinkiet"},  // WŁ: wejście do gabinetu
+  {20, 25, RELAY_TRIGGER_HIGH, "Ośw. kuchnia-1 sekcja"},  // WŁ: kuchnia z prawej strony lodówki (podwójny),wejście do salonu (podwójny)
+  {21, 26, RELAY_TRIGGER_HIGH, "Ośw. kuchnia-2 sekcja"},  // WŁ: kuchnia z prawej strony lodówki (podwójny),wejście do salonu (podwójny)
+  {22, 27, RELAY_TRIGGER_HIGH, "Ośw. kuchnia-plafon"},  // WŁ: wejście do salonu
+  {23, 28, RELAY_TRIGGER_HIGH, "Ośw. schowek"},  // WŁ: schowek
+  {24, 29, RELAY_TRIGGER_HIGH | RELAY_IMPULSE, "Brama garażowa"},  // WŁ: wej do garażu
+  {25, 30, RELAY_TRIGGER_HIGH | RELAY_IMPULSE, "Brama wjazdowa"},  // WŁ: wej do garażu
+  {26, 31, RELAY_TRIGGER_HIGH, "Kontakt. brama wjazdowa"},  // kontaktron na bramie wjazdowej
+  {27, 32, RELAY_TRIGGER_HIGH, "WLED salon-wirtualny"},  // wirtualny przekaźnik dla sterowania modułem WLED-salon
+  {28, E(2,0), RELAY_TRIGGER_HIGH, "Ośw. zew. balkon"},  // WŁ: przy balkonie Zuzia i Pokój2 (podwójny)
+  {29, E(2,1), RELAY_TRIGGER_HIGH, "Ośw. hol piętro"},  // WŁ: przy schodach, przy domofonie piętro, przy garderobie hol
+  {30, E(2,2), RELAY_TRIGGER_HIGH, "Ośw. zew. l.choinkowe"},  // WŁ: BRAK
+  {31, E(2,3), RELAY_TRIGGER_HIGH, "Ośw. pokój2-sufit"},  // WŁ: przy wejściu
+  {32, E(2,4), RELAY_TRIGGER_HIGH, "Ośw. pokój2-kinkiety"},  // WŁ: przy wejściu, przy balkonie (podwójny)
+  {33, E(2,5), RELAY_TRIGGER_HIGH, "Ośw. Zuzia-sufit"},  // WŁ: przy wejściu
+  {34, E(2,6), RELAY_TRIGGER_HIGH, "Ośw. Zuzia-kinkiety"},  // WŁ: przy wejściu, przy balkonie (podwójny)
+  {35, E(2,7), RELAY_TRIGGER_HIGH, "Ośw. łazienka_1-sufit1"},  // WŁ: wej. do łazienki (podwójny)
+  {36, E(2,8), RELAY_TRIGGER_HIGH, "Ośw. łazienka_1-LEDY"},  // WŁ: wej. do łazienki (podwójny)
+  {37, E(2,9), RELAY_TRIGGER_HIGH, "Ośw. łazienka_1-kink._L"},  // WŁ: przy lustrze po prawo i lewo
+  {38, E(2,10), RELAY_TRIGGER_HIGH, "Ośw. pralnia"},  // WŁ: przy wej. do pralni
+  {39, E(2,11), RELAY_TRIGGER_HIGH, "Ośw. strych"},  // WŁ: przy wej. do pralni
+  {40, E(2,12), RELAY_TRIGGER_HIGH, "Ośw. garderoba hol"},  // WŁ: na holu przy wejściu do garderoby
+  {41, E(2,13), RELAY_TRIGGER_HIGH, "Ośw. sypialnia-1 tuba"},  // WŁ: przy wej do sypialni (podwójny)
+  {42, E(2,14), RELAY_TRIGGER_HIGH, "Ośw. sypialnia-2 tuby"},  // WŁ: przy wej do sypialni (podwójny)
+  {43, E(2,15), RELAY_TRIGGER_HIGH, "Ośw. garderoba sypialnia"},  // WŁ: przy wej. do garderoby w sypialni
+  {44, E(3,0), RELAY_TRIGGER_HIGH, "Ośw. sypial.-kink.Piotr"},  // WŁ: przy łóżku PIOTREK
+  {45, E(3,1), RELAY_TRIGGER_HIGH, "Ośw. sypial.-kink.Iza"},  // WŁ: przy łóżku IZA
+  {46, E(3,2), RELAY_TRIGGER_HIGH, "Ośw. hol-2 sekcja"},  // WŁ: przy wej. z wiatrołapu (podwójny), przy wejściu do salonu (podówjny), doł przy schodach (podwójny)
+  {47, E(3,3), RELAY_TRIGGER_HIGH, "Ośw. gabinet-sufit2"},  // WŁ: wejście do gabinetu (podwójny)
+  {48, E(3,4), RELAY_TRIGGER_HIGH, "Ośw. łazienka_1-kink._P"},  // WŁ: przy lustrze po prawo i lewo
+  {49, E(3,5), RELAY_TRIGGER_HIGH, "Ośw. łazienka_1-sufit2"},  // WŁ: wej. do łazienki (podwójny)
+  {50, E(3,6), RELAY_TRIGGER_HIGH, "PUSTY-PUSTY-PUSTY"},  // 
+  {51, E(3,7), RELAY_TRIGGER_HIGH, "PUSTY-PUSTY-PUSTY"},  // 
+  {52, E(3,8), RELAY_TRIGGER_HIGH, "WLED Sypialnia-wirtualny"},  // wirtualny przekaźnik dla sterowania modułem WLED-sypialnia
+  {53, E(3,9), RELAY_TRIGGER_HIGH, "WLED Zuzia-wirtualny"},  // wirtualny przekaźnik dla sterowania modułem WLED-Zuzia
+  {54, E(3,10), RELAY_TRIGGER_HIGH, "Ośw. kuchnia-LEDY-wirtualny"},  // wirtualny przekaźnik dla sterowania modułem LED-kuchnia
+  {55, 33, RELAY_TRIGGER_HIGH | RELAY_IMPULSE, "B. garażowa-uchylenie"},  // WŁ:
+  {56, 34, RELAY_TRIGGER_HIGH | RELAY_IMPULSE, "B. wjazdowa-uchylenie"}  // WŁ:
+};
+
+// Buttons config
+// Row params: button pin - pin used for button, can be expander pin (but NOT RECOMMENDED) via "E(x, y)" macro
+//             button type - [MONO_STABLE|BI_STABLE|DING_DONG|REED_SWITCH]
+//             click action relay ID - MUST be defined in gRelayConfig
+//             long-press action relay ID - ignored for BI_STABLE, DING_DONG, REED_SWITCH
+//             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
+//             button description - debug only, can be empty ("")
+const ButtonConfigDef gButtonConfig[] = {
+  {A0, MONO_STABLE, 0, -1, 29, "Ośw. hol-1 sekcja"},  // WŁ: przy wej. z wiatrołapu (podwójny), przy wejściu do salonu (podówjny), doł przy schodach (podwójny)
+  {A1, MONO_STABLE, 1, -1, -1, "Ośw. zew. od ogrodu"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {A2, MONO_STABLE, 2, -1, -1, "Ośw. nad tarasem"},  // WŁ: przy wyjściu na taras (podwójny)
+  {A3, MONO_STABLE, 3, -1, -1, "Ośw. na tarasie"},  // WŁ: przy wyjściu na taras (podwójny)
+  {A4, MONO_STABLE, 4, -1, -1, "Ośw. klatka-schody"},  // WŁ: klatka przy schodach dół i góra
+  {A5, MONO_STABLE, 5, -1, -1, "Ośw. klatka-kinkiety"},  // WŁ: klatka przy schodach dół i góra
+  {A6, MONO_STABLE, 6, -1, -1, "Ośw. kotłownia"},  // WŁ: przy wejściu z garażu + wyjście z kotłowni na zewnątrz=mostek z garażem
+  {A7, MONO_STABLE, 7, -1, -1, "Ośw. garaż-1 sekcja"},  // WŁ: przy wejściu do garażu (podwójny), wejście do kotłowni (podwójny)
+  {A8, MONO_STABLE, 8, -1, -1, "Ośw. garaż-2 sekcja"},  // WŁ: przy wejściu do garażu (podwójny), wejście do kotłowni (podwójny)
+  {A9, MONO_STABLE, 9, -1, -1, "Ośw. przed wejściem"},   // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {A10, MONO_STABLE, 10, -1, -1, "Ośw. zew. od kotłowni"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {A11, MONO_STABLE, 11, -1, -1, "Ośw. zew. przed garażem"},  // WŁ: wiatrołap przy wejściu do domu (podwójny)
+  {A12, MONO_STABLE, 12, -1, -1, "Ośw. wiatrołap"},  // WŁ: wiatrołap przy wejściu do domu i wejściu z wiatrołapu do holu
+  {A13, MONO_STABLE, 13, -1, -1, "Ośw. salon kinkiety"},  // WŁ: wejście do salonu (podwójny), przy wykuszu
+  {A14, MONO_STABLE, 14, -1, -1, "Ośw. salon sufit"},  // WŁ: wejście do salonu (podwójny), przy wykuszu
+  {A15, MONO_STABLE, 15, -1, 16, "Ośw. łazienka_0-kink."},  // WŁ: wejście do łazienki+lustro=zmostkowan
+  {53, MONO_STABLE, 16, -1, 15, "Ośw. łazienka_0-sufit"},  // WŁ: wejście do łazienki+lustro=zmostkowan
+  {52, MONO_STABLE, 17, 1, -1, "Ośw. salon nad stołem"},  // WŁ: wejście do salonu, przy wykuszu
+  {51, MONO_STABLE, 18, -1, -1, "Ośw. gabinet-sufit1"},  // WŁ: wejście do gabinetu (podwójny)
+  {50, MONO_STABLE, 19, -1, -1, "Ośw. gabinet-kinkiet"},  // WŁ: wejście do gabinetu
+  {49, MONO_STABLE, 20, 54, 23, "Ośw. kuchnia-1 sekcja"},  // WŁ: kuchnia z prawej strony lodówki (podwójny),wejście do salonu (podwójny)
+  {48, MONO_STABLE, 21, 54, 23, "Ośw. kuchnia-2 sekcja"},  // WŁ: kuchnia z prawej strony lodówki (podwójny),wejście do salonu (podwójny)
+  {47, MONO_STABLE, 22, -1, -1, "Ośw. kuchnia-plafon"},  // WŁ: wejście do salonu
+  {46, MONO_STABLE, 23, -1, -1, "Ośw. schowek"},  // WŁ: schowek
+  {45, MONO_STABLE, 24, -1, -1, "Brama garażowa"},  // WŁ: wej do garażu
+  {44, MONO_STABLE, 25, -1, -1, "Brama wjazdowa"},  // WŁ: wej do garażu
+  {43, REED_SWITCH, 26, -1, -1, "Kontakt. brama wjazdowa"},  // kontaktron na bramie wjazdowej
+  {42, MONO_STABLE, 27, -1, -1, "WLED salon-wirtualny"},  // wirtualny przycisk dla sterowania modułem WLED-salon
+  {E(0,0), MONO_STABLE, 28, -1, -1, "Ośw. zew. balkon"},  // WŁ: przy balkonie Zuzia i Pokój2 (podwójny)
+  {E(0,1), MONO_STABLE, 29, -1, -1, "Ośw. hol piętro"},  // WŁ: przy schodach, przy domofonie piętro, przy garderobie hol
+  {E(0,2), MONO_STABLE, 30, -1, -1, "Ośw. zew. l.choinkowe"},  // WŁ: BRAK
+  {E(0,3), MONO_STABLE, 31, -1, -1, "Ośw. pokój2-sufit"},  // WŁ: przy wejściu
+  {E(0,4), MONO_STABLE, 32, -1, 31, "Ośw. pokój2-kinkiety"},  // WŁ: przy wejściu, przy balkonie (podwójny)
+  {E(0,5), MONO_STABLE, 33, 53, -1, "Ośw. Zuzia-sufit"},  // WŁ: przy wejściu
+  {E(0,6), MONO_STABLE, 34, 53, 33, "Ośw. Zuzia-kinkiety"},  // WŁ: przy wejściu, przy balkonie (podwójny)
+  {E(0,7), MONO_STABLE, 35, 36, -1, "Ośw. łazienka_1-sufit1"},  // WŁ: wej. do łazienki (podwójny)
+  {E(0,8), MONO_STABLE, 36, -1, -1, "Ośw. łazienka_1-LEDY"},  // WŁ: wej. do łazienki (podwójny)
+  {E(0,9), MONO_STABLE, 37, 36, 49, "Ośw. łazienka_1-kink._L"},  // WŁ: przy lustrze po prawo i lewo
+  {E(0,10), MONO_STABLE, 38, -1, 35, "Ośw. pralnia"},  // WŁ: przy wej. do pralni
+  {E(0,11), MONO_STABLE, 39, -1, -1, "Ośw. strych"},  // WŁ: przy wej. do pralni
+  {E(0,12), MONO_STABLE, 40, -1, -1, "Ośw. garderoba hol"},  // WŁ: na holu przy wejściu do garderoby
+  {E(0,13), MONO_STABLE, 41, 52, 44, "Ośw. sypialnia-1 tuba"},  // WŁ: przy wej do sypialni (podwójny)
+  {E(0,14), MONO_STABLE, 42, 52, 45, "Ośw. sypialnia-2 tuby"},  // WŁ: przy wej do sypialni (podwójny)
+  {E(0,15), MONO_STABLE, 43, -1, -1, "Ośw. garderoba sypialnia"},  // WŁ: przy wej. do garderoby w sypialni
+  {E(1,0), MONO_STABLE, 44, 52, 45, "Ośw. sypial.-kink.Piotr"},  // WŁ: przy łóżku PIOTREK
+  {E(1,1), MONO_STABLE, 45, 52, 44, "Ośw. sypial.-kink.Iza"},  // WŁ: przy łóżku IZA
+  {E(1,2), MONO_STABLE, 46, -1, 29, "Ośw. hol-2 sekcja"},  // WŁ: przy wej. z wiatrołapu (podwójny), przy wejściu do salonu (podówjny), doł przy schodach (podwójny)
+  {E(1,3), MONO_STABLE, 47, -1, -1, "Ośw. gabinet-sufit2"},  // WŁ: wejście do gabinetu (podwójny)
+  {E(1,4), MONO_STABLE, 48, 36, 35, "Ośw. łazienka_1-kink._P"},  // WŁ: przy lustrze po prawo i lewo
+  {E(1,5), MONO_STABLE, 49, 36, -1, "Ośw. łazienka_1-sufit2"},  // WŁ: wej. do łazienki (podwójny)
+  {E(1,6), MONO_STABLE, 50, -1, -1, "PUSTY-PUSTY-PUSTY"},  // 
+  {E(1,7), MONO_STABLE, 51, -1, -1, "PUSTY-PUSTY-PUSTY"},  // 
+  {E(1,8), MONO_STABLE, 52, -1, -1, "WLED sypialnia-wirtualny"},  // wirtualny przycisk dla sterowania modułem WLED-sypialnia
+  {E(1,9), MONO_STABLE, 53, -1, -1, "WLED Zuzia-wirtualny"},  // wirtualny przycisk dla sterowania modułem WLED-Zuzia
+  {E(1,10), MONO_STABLE, 54, -1, -1, "Ośw. kuchnia-LEDY-wirtualny"},  // wirtualny przycisk dla sterowania modułem LED-kuchnia
+  {41, MONO_STABLE, 55, -1, -1, "B. garażowa-uchylenie"},  // WŁ:
+  {40, MONO_STABLE, 56, -1, -1, "B. wjazdowa-uchylenie"}  // WŁ:
+};
+```
+In this config in Home Assistant relays are found in entities as switch.multi_relay_0_x and switch contact(REED_SWITCH) is found in entieties as binary_sensor.multi_relay_0_26
+
 ## Additional config
 Optional configuration only if you want to customize the script.
 
