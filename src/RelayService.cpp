@@ -5,8 +5,9 @@ using namespace lkankowski;
 
 //TODO: check if relayNum is lower than _relayConfig.size
 
-RelayService::RelayService(const RelayConfigRef & relayConfig, EepromInterface & eeprom)
+RelayService::RelayService(const RelayConfigRef & relayConfig, const Configuration & configuration, EepromInterface & eeprom)
   : _relayConfig(relayConfig)
+  , _configuration(configuration)
   , _eeprom(eeprom)
   , _impulsePending(0)
   , _impulseInterval(250)
@@ -64,7 +65,7 @@ void RelayService::initialize(bool resetEepromState)
     _relayIsImpulse[relayNum] = (_relayConfig.config[relayNum].relayOptions & RELAY_IMPULSE) != 0;
     _relayImpulseStartMillis[relayNum] = 0UL;
     _relayDependsOn[relayNum] = (_relayConfig.config[relayNum].sensorId != _relayConfig.config[relayNum].dependsOn)
-                                ? getRelayNum(_relayConfig.config[relayNum].dependsOn)
+                                ? _configuration.getRelayNum(_relayConfig.config[relayNum].dependsOn)
                                 : -1;
     _isRelayDependent[relayNum] = false;
   }
@@ -158,17 +159,6 @@ int RelayService::getSensorId(int relayNum)
 {
   return _relays[relayNum]->getSensorId();
 };
-
-int RelayService::getRelayNum(int sensorId)
-{  
-  if (sensorId > -1) {
-    for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
-      if (_relayConfig.config[relayNum].sensorId == sensorId) return(relayNum);
-    }
-  }
-  return(-1);
-};
-
 
 const char * RelayService::getDescription(int relayNum)
 {

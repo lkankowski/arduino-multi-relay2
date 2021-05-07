@@ -1,17 +1,10 @@
 #pragma once
 
 #include <Switch.h>
+#include <Configuration.h>
+
 
 namespace lkankowski {
-
-enum ButtonType {
-  MONO_STABLE = 0,
-  BI_STABLE = 1,
-  DING_DONG = 2, // HIGH state immediatly after push, LOW state after release
-  REED_SWITCH = 3, // magnetic sensor for door or window, LOW - closed, HIGH - opened
-  PRESSED_STATE_HIGH = 0x10
-};
-
 
 class ButtonInterface
 {

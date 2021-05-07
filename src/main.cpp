@@ -2,7 +2,6 @@
 #ifdef ARDUINO
 
 #include <ArduinoAbstract.h>
-#include <assert.h>
 #include <EepromAbstract.h>
 #include <RelayService.h>
 #include <ButtonService.h>
@@ -14,6 +13,7 @@ using namespace lkankowski;
 const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
 
 // Configuration in separate file
+#include <Configuration.h>
 #include "config.h"
 
 #ifdef USE_EXPANDER
@@ -46,9 +46,10 @@ MyMessage myMessage; // MySensors - Sending Data
 
 const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
-RelayService gRelayService(gRelayConfigRef, gEeprom);
+RelayService gRelayService(gRelayConfigRef, gConfiguration, gEeprom);
 ButtonService gButtonService(gButtonConfigRef, BUTTON_DEBOUNCE_INTERVAL);
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
@@ -107,8 +108,7 @@ void before()
 
   if (PinCreator::instance() == nullptr) {
     Serial.println("PinCreator instance is NULL");
-    delay(1000);
-    assert(0);
+    haltSystem();
   }
 
   // validate config
@@ -119,8 +119,7 @@ void before()
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial.println(String("Configuration failed - expander no or number of pins out of range for relay: ") + relayNum);
-          delay(1000);
-          assert(0);
+          haltSystem();
         }
       }
     }
@@ -132,8 +131,7 @@ void before()
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial.println(String("Configuration failed - expander no or number of pins out of range for button: ") + buttonNum);
-          delay(1000);
-          assert(0);
+          haltSystem();
         }
       }
     #endif
@@ -144,8 +142,7 @@ void before()
     if ((gButtonConfig[buttonNum].doubleClickRelayId != -1) && (gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId) == -1)) fail = 3;
     if (fail) {
         Serial.println(String("Configuration failed - invalid '") + failAction[fail] + " relay ID' for button: " + buttonNum);
-        delay(1000);
-        assert(0);
+        haltSystem();
     }
     // TODO: validate if pin is correct to the current board
   }
@@ -168,11 +165,11 @@ void before()
   // gButtonService.setup();
   for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
   {
-    int clickActionRelayNum = gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
+    int clickActionRelayNum = gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
     gButtonService.setAction(buttonNum,
                             clickActionRelayNum,
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     gButtonService.attachPin(buttonNum);
     if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
@@ -289,7 +286,7 @@ void receive(const MyMessage &message)
   #endif
   if (message.getCommand() == C_SET) {
     if (message.getType() == V_STATUS) {
-      int relayNum = gRelayService.getRelayNum(message.getSensor());
+      int relayNum = gConfiguration.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
       gRelayService.changeState(relayNum, message.getBool(), millis());
       if (! message.getRequestEcho()) {

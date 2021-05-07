@@ -3,37 +3,19 @@
 #include <Relay.h>
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
+#include <Configuration.h>
+
 
 namespace lkankowski {
 
-const uint8_t RELAY_TRIGGER_LOW  = 0;
-const uint8_t RELAY_TRIGGER_HIGH = 1;
-const uint8_t RELAY_STARTUP_ON   = 2;
-const uint8_t RELAY_STARTUP_OFF  = 4;
-const uint8_t RELAY_IMPULSE      = 8;
-const uint8_t RELAY_INDEPENDENT  = 16;
 const uint8_t RELAY_STARTUP_MASK = RELAY_STARTUP_ON | RELAY_STARTUP_OFF;
 
 #define RELAY_STATE_STORAGE 1
 
-typedef struct {
-  int sensorId;
-  int relayPin;
-  uint8_t relayOptions;
-  int dependsOn;
-  const char * relayDescription;
-} RelayConfigDef;
-
-typedef struct {
-  const RelayConfigDef * config;
-  int size;
-} RelayConfigRef;
-
-
 class RelayService {
 
   public:
-    RelayService(const RelayConfigRef &, EepromInterface &);
+    RelayService(const RelayConfigRef &, const Configuration &, EepromInterface &);
     ~RelayService();
 
     void initialize(bool);
@@ -46,7 +28,6 @@ class RelayService {
     int getSensorId(int);
     void reportAsSensor(int relayNum) { _relays[relayNum]->reportAsSensor(); };
     bool isSensor(int relayNum) { return _relays[relayNum]->isSensor(); };
-    int getRelayNum(int);
     const char * getDescription(int);
     String toString(int);
 
@@ -54,6 +35,7 @@ class RelayService {
     RelayPtr * _relays;
     PinInterface ** _pin;
     const RelayConfigRef & _relayConfig;
+    const Configuration & _configuration;
     bool * _storeRelayToEEPROM;
     EepromInterface& _eeprom;
     int _impulsePending;

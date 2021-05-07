@@ -149,6 +149,8 @@ namespace lkankowski {
       uint8_t _numberOfExpanders;
   };
 
+  void haltSystem();
+
 } // namespace lkankowski
 
 

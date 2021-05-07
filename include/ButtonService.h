@@ -1,23 +1,9 @@
 #pragma once
 
 #include <Button.h>
+#include <Configuration.h>
 
 namespace lkankowski {
-
-typedef struct {
-  int buttonPin;
-  ButtonType buttonType;
-  int clickRelayId;
-  int longClickRelayId;
-  int doubleClickRelayId;
-  const char * const buttonDescription;
-} ButtonConfigDef;
-
-typedef struct {
-  const ButtonConfigDef * config;
-  int size;
-} ButtonConfigRef;
-
 
 class ButtonService
 {
