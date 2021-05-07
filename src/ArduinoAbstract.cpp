@@ -1,4 +1,5 @@
 #include <ArduinoAbstract.h>
+#include <assert.h>
 
 using namespace lkankowski;
 
@@ -147,6 +148,13 @@ void PinCreator::initExpanders()
   }
 };
 #endif
+
+
+void lkankowski::haltSystem()
+{
+  delay(1000);
+  assert(0);
+};
 
 
 #else
