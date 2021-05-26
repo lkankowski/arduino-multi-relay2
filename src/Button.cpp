@@ -103,26 +103,22 @@ int MonoStableButton::checkEvent(unsigned long millis)
 {
   bool switchStateChanged = _switch->update(millis);
   int buttonAction = calculateEvent(switchStateChanged, millis);
-  // std::cout << "MonoStableButton::checkEvent: switchStateChanged=" << switchStateChanged << std::endl;
 
   int relayNum = -1;
   if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
-    // std::cout << "CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - Click for relay " + relayNum);
+      printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
-    // std::cout << "DOUBLE-CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
+      printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
-    // std::cout << "LONG-PRESS!" << std::endl;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - LongPress for relay " + relayNum);
+      printf_P(PSTR("%s - LongPress for relay %i"), _description, relayNum);
     #endif
   }
   return relayNum;

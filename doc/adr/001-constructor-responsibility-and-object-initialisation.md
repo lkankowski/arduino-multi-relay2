@@ -1,4 +1,4 @@
-# 1. Record architecture decisions
+# 1. Constructor responsibility and object initialisation
 
 Date: 2021-05-07
 

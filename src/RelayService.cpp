@@ -3,7 +3,8 @@
 
 using namespace lkankowski;
 
-//TODO: check if relayNum is lower than _relayConfig.size
+
+//TODO: check if relayNum is lower than _configuration.getRelaysCount()
 
 RelayService::RelayService(const RelayConfigRef & relayConfig, const Configuration & configuration, EepromInterface & eeprom)
   : _relayConfig(relayConfig)
@@ -13,17 +14,17 @@ RelayService::RelayService(const RelayConfigRef & relayConfig, const Configurati
   , _impulseInterval(250)
   , _isAnyDependentOn(false)
 {
-  _pin = new PinInterface*[_relayConfig.size];
-  _relays = new RelayPtr[_relayConfig.size];
-  for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
+  _pin = new PinInterface*[_configuration.getRelaysCount()];
+  _relays = new RelayPtr[_configuration.getRelaysCount()];
+  for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     _pin[relayNum] = PinCreator::instance()->create(relayConfig.config[relayNum].relayPin);
     _relays[relayNum] = new Relay(_pin[relayNum]);
   }
-  _storeRelayToEEPROM = new bool[_relayConfig.size];
-  _relayIsImpulse = new bool[_relayConfig.size];
-  _relayImpulseStartMillis = new unsigned long[_relayConfig.size];
-  _relayDependsOn = new int[_relayConfig.size];
-  _isRelayDependent = new bool[_relayConfig.size];
+  _storeRelayToEEPROM = new bool[_configuration.getRelaysCount()];
+  _relayIsImpulse = new bool[_configuration.getRelaysCount()];
+  _relayImpulseStartMillis = new unsigned long[_configuration.getRelaysCount()];
+  _relayDependsOn = new int[_configuration.getRelaysCount()];
+  _isRelayDependent = new bool[_configuration.getRelaysCount()];
 };
 
 
@@ -34,7 +35,7 @@ RelayService::~RelayService()
   delete _relayImpulseStartMillis;
   delete _relayIsImpulse;
   delete _storeRelayToEEPROM;
-  for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
+  for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     delete _relays[relayNum];
     delete _pin[relayNum];
   }
@@ -45,9 +46,12 @@ RelayService::~RelayService()
 
 void RelayService::initialize(bool resetEepromState)
 {
-  int initialState[_relayConfig.size];
-  for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
-    
+  int initialState[_configuration.getRelaysCount()];
+  for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
+    //TODO: read config from PROGMEM
+    // RelayConfigDef relayConfig = {};
+    // PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
+
     _relays[relayNum]->initialize(_relayConfig.config[relayNum].sensorId, _relayConfig.config[relayNum].relayDescription);
     _relays[relayNum]->attachPin();
     _relays[relayNum]->setTriggerMode(_relayConfig.config[relayNum].relayOptions & RELAY_TRIGGER_HIGH);
@@ -70,7 +74,7 @@ void RelayService::initialize(bool resetEepromState)
     _isRelayDependent[relayNum] = false;
   }
   // startup turn on dependents
-  for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
+  for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     if (_relayDependsOn[relayNum] != -1) {
       if ((_relayConfig.config[_relayDependsOn[relayNum]].relayOptions & RELAY_INDEPENDENT) == 0) {
         _isRelayDependent[_relayDependsOn[relayNum]] = true;
@@ -80,7 +84,7 @@ void RelayService::initialize(bool resetEepromState)
     }
   }
   // set initial state
-  for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
+  for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     _relays[relayNum]->changeState(initialState[relayNum]);
   }
 };
@@ -134,10 +138,10 @@ bool RelayService::turnOffDependent(unsigned long millis)
 {
   if (_isAnyDependentOn) {
     _isAnyDependentOn = false;
-    for (int relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
+    for (int relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
       if (_isRelayDependent[relayNum] && _relays[relayNum]->getState()) {
         bool allMasterTurnedOff = true;
-        for (int masterRelayNum = 0; masterRelayNum < _relayConfig.size; masterRelayNum++) {
+        for (int masterRelayNum = 0; masterRelayNum < _configuration.getRelaysCount(); masterRelayNum++) {
           if ((masterRelayNum != relayNum) && (_relayDependsOn[masterRelayNum] == relayNum) && _relays[masterRelayNum]->getState()) {
             allMasterTurnedOff = false;
             break;

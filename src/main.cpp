@@ -44,14 +44,15 @@ MyMessage myMessage; // MySensors - Sending Data
   MyMessage debugMessage(255, V_TEXT);
 #endif
 
-const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
-const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+const RelayConfigRef gRelayConfigRef PROGMEM = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+const ButtonConfigRef gButtonConfigRef PROGMEM = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
 RelayService gRelayService(gRelayConfigRef, gConfiguration, gEeprom);
 ButtonService gButtonService(gButtonConfigRef, BUTTON_DEBOUNCE_INTERVAL);
 
+FILE serial_stdout;
 void(* resetFunc) (void) = 0; //declare reset function at address 0
 
 
@@ -60,50 +61,60 @@ void before()
 {
   Serial.begin(115200);
 
+  // Set up redirect of stdout to serial
+  fdev_setup_stream(&serial_stdout, serial_putchar, NULL, _FDEV_SETUP_WRITE);
+  stdout = &serial_stdout;
+
   #ifdef DEBUG_STARTUP
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - common config: MONO_STABLE_TRIGGER="+MONO_STABLE_TRIGGER
-                   +", RELAY_IMPULSE_INTERVAL="+RELAY_IMPULSE_INTERVAL+", BUTTON_DEBOUNCE_INTERVAL="+BUTTON_DEBOUNCE_INTERVAL
-                   +", BUTTON_DOUBLE_CLICK_INTERVAL="+BUTTON_DOUBLE_CLICK_INTERVAL+", BUTTON_LONG_PRESS_INTERVAL="+BUTTON_LONG_PRESS_INTERVAL
-                   +", MULTI_RELAY_VERSION="+MULTI_RELAY_VERSION);
+    printf_P(
+      PSTR("# %lu Debug startup - common config: MONO_STABLE_TRIGGER=%i, RELAY_IMPULSE_INTERVAL=%lu, BUTTON_DEBOUNCE_INTERVAL=%lu, BUTTON_DOUBLE_CLICK_INTERVAL=%lu, BUTTON_LONG_PRESS_INTERVAL=%lu, MULTI_RELAY_VERSION=%s\n"),
+      debugCounter++, MONO_STABLE_TRIGGER, RELAY_IMPULSE_INTERVAL, BUTTON_DEBOUNCE_INTERVAL, BUTTON_DOUBLE_CLICK_INTERVAL,
+      BUTTON_LONG_PRESS_INTERVAL, MULTI_RELAY_VERSION
+    );
 
     #ifdef USE_EXPANDER
-      Serial.println(String("# ")+(debugCounter++)+" Debug startup - expander config");
+      printf_P(PSTR("# %lu Debug startup - expander config\n"), debugCounter++);
       for(int i = 0; i < sizeof(gExpanderAddresses); i++) {
-        Serial.print(expanderAddresses[i]);
-        Serial.print(",");
+        printf("%i,",expanderAddresses[i]);
       }
-      Serial.println();
+      printf("\n");
     #endif
 
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - relay config");
+    printf_P(PSTR("# %lu Debug startup - relay config\n"), debugCounter++);
     for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
-      Serial.println(String("# ")+(debugCounter++)+" > "+gRelayConfig[relayNum].sensorId+";"+gRelayConfig[relayNum].relayPin+";"
-                     +gRelayConfig[relayNum].relayOptions+";"+gRelayConfig[relayNum].relayDescription);
+      RelayConfigDef relayConfig = {};
+      PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
+      printf_P(
+        PSTR("# %lu > %i;%i;%i;%s;\n"), debugCounter++, relayConfig.sensorId,
+        relayConfig.relayPin, relayConfig.relayOptions, relayConfig.relayDescription
+      );
     }
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - button config");
-    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      Serial.println(String("# ")+(debugCounter++)+" > "+gButtonConfig[buttonNum].buttonPin+";"+gButtonConfig[buttonNum].buttonType+";"
-                     +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
-                     +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
+    printf_P(PSTR("# %lu Debug startup - button config\n"), debugCounter++);
+    for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
+      ButtonConfigDef buttonConfig = {};
+      PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+      printf_P(
+        PSTR("# %lu > %i;%i;%i;%i;%i;%s;\n"), debugCounter++, buttonConfig.buttonPin,
+        buttonConfig.buttonType, buttonConfig.clickRelayId, buttonConfig.longClickRelayId,
+        buttonConfig.doubleClickRelayId, buttonConfig.buttonDescription
+      );
     }
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (first value is version, relay state starts at "+RELAY_STATE_STORAGE+")");
-    Serial.print(String("# ")+(debugCounter++)+" ");
+    printf_P(PSTR("# %lu Debug startup - EEPROM (first value is version, relay state starts at %i\n"), debugCounter++, RELAY_STATE_STORAGE);
+    printf_P(PSTR("# %lu > "), debugCounter++);
     for (int relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
-      Serial.print(EEPROM.read(relayNum));
-      Serial.print(",");
+      printf("%i,", EEPROM.read(relayNum));
     }
-    Serial.println();
-    Serial.println(String("# ")+(debugCounter++)+" Debug startup - buttons pin state");
-    Serial.print(String("# ")+(debugCounter++)+" ");
+    printf("\n");
+    printf_P(PSTR("# %lu Debug startup - buttons pin state\n"), debugCounter++);
+    printf_P(PSTR("# %lu > "), debugCounter++);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
       pinMode(gButtonConfig[buttonNum].buttonPin, INPUT_PULLUP);
     }
     delay(200);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      Serial.print(digitalRead(gButtonConfig[buttonNum].buttonPin));
-      Serial.print(",");
+      printf("%i,",digitalRead(gButtonConfig[buttonNum].buttonPin));
     }
-    Serial.println();
+    printf("\n");
   #endif
 
   // if version has changed, reset state of all relays
@@ -124,6 +135,10 @@ void before()
   // gButtonService.setup();
   for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
   {
+    //TODO: read config from PROGMEM
+    ButtonConfigDef buttonConfig = {};
+    PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+
     int clickActionRelayNum = gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
     gButtonService.setAction(buttonNum,
                             clickActionRelayNum,
@@ -204,8 +219,10 @@ void loop()
       loopCumulativeMillis += loopIntervalCurrent - loopStartMillis;
       loopCounter++;
       if ( loopCounter > DEBUG_STATS) {
-        Serial.println(String("# ") + DEBUG_STATS + " loop stats: (end-start)=" + (loopIntervalCurrent - loopInterval)
-                       + "ms, cumulative_loop_millis=" + loopCumulativeMillis + "ms");
+        printf_P(
+          PSTR("# %i loop stats: (end-start)=%lums, cumulative_loop_millis=%lums\n"),
+          DEBUG_STATS, (loopIntervalCurrent - loopInterval), loopCumulativeMillis
+        );
         loopCounter = 0;
         debugStatsOn = false;
       }
@@ -256,9 +273,10 @@ void presentation()
 void receive(const MyMessage &message)
 {
   #ifdef DEBUG_COMMUNICATION
-    Serial.println(String("# Incoming message: sensorId=") + message.getSensor() + ", command=" + message.getCommand()
-                 + ", ack=" + message.isAck() + ", echo=" + message.getRequestEcho() + ", type=" + message.getType()
-                 + ", payload=" + message.getString());
+    printf_P(
+      PSTR("# Incoming message: sensorId=%i, command=%s, ack=%s, echo=%s, type=%s, payload=%s\n"),
+      message.getSensor(), message.getCommand(), message.isAck(), message.getRequestEcho(), message.getType(), message.getString()
+    );
   #endif
   if (message.getCommand() == C_SET) {
     if (message.getType() == V_STATUS) {
@@ -276,7 +294,7 @@ void receive(const MyMessage &message)
         #ifdef DEBUG_STATS
           debugStatsOn = true;
           loopCounter = 0;
-          send(debugMessage.set("toogle debug stats"));
+          send(debugMessage.set(F("toogle debug stats")));
           gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
         #endif
       } else if (debugCommand == 2) {
@@ -288,7 +306,7 @@ void receive(const MyMessage &message)
           Serial.println(String("# Button ") + buttonNum + ": " + gButtonService.toString(buttonNum));
         }
       } else if (debugCommand == 4) { // dump EEPROM
-        Serial.print("# Dump EEPROM: ");
+        Serial.print(F("# Dump EEPROM: "));
         for (int eepromIdx = 0; eepromIdx < gEeprom.length(); eepromIdx++) {
           Serial.print(gEeprom.dump(eepromIdx));
           Serial.print(",");
@@ -319,9 +337,9 @@ using namespace lkankowski;
 RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 
-Eeprom gEeprom;
-RelayService gRelayService(gRelayConfigRef, gEeprom);
-ButtonService gButtonService(gButtonConfigRef, BUTTON_DEBOUNCE_INTERVAL);
+// Eeprom gEeprom;
+// RelayService gRelayService(gRelayConfigRef, gEeprom);
+// ButtonService gButtonService(gButtonConfigRef, BUTTON_DEBOUNCE_INTERVAL);
 
 int main( int argc, char **argv) {
 
@@ -335,18 +353,18 @@ int main( int argc, char **argv) {
   ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
   MonoStableButton::clickTriggerWhenPressed(true);
 
-  Serial.println("# setup() - before button setup");
-  for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
-  {
-    gButtonService.setAction(buttonNum,
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                            gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
-    Serial.println("# setup() - setAction");
-    gButtonService.attachPin(buttonNum);
-    Serial.println("# setup() - attachPin");
-  }
-  Serial.println("# setup() - after button setup");
+  // Serial.println("# setup() - before button setup");
+  // for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++)
+  // {
+  //   gButtonService.setAction(buttonNum,
+  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
+  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
+  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+  //   Serial.println("# setup() - setAction");
+  //   gButtonService.attachPin(buttonNum);
+  //   Serial.println("# setup() - attachPin");
+  // }
+  // Serial.println("# setup() - after button setup");
 };
 #endif
 #endif

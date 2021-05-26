@@ -21,6 +21,17 @@
   #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
 #endif
 
+template <typename T> void PROGMEM_readAnything (const T * sce, T& dest) {
+  memcpy_P (&dest, sce, sizeof (T));
+};
+
+
+// Function that printf and related will use to print
+int serial_putchar(char c, FILE* f);
+
+void haltSystem();
+
+
 #endif //ARDUINO
 
 
@@ -135,8 +146,6 @@ namespace lkankowski {
       uint8_t _numberOfExpanders;
   };
 
-  void haltSystem();
-
 } // namespace lkankowski
 
 
@@ -150,6 +159,8 @@ namespace lkankowski {
 #define INPUT 0x0
 #define OUTPUT 0x1
 #define INPUT_PULLUP 0x2
+
+#define PROGMEM
 
 unsigned long millis(void);
 void delay(int);

@@ -2,10 +2,6 @@
 
 using namespace lkankowski;
 
-#ifdef DEBUG_STARTUP
-  extern unsigned long debugCounter;
-#endif
-
 
 Relay::Relay(PinInterface * pin)
   : _pin(pin)
@@ -36,11 +32,6 @@ void Relay::attachPin()
 
 bool Relay::changeState(bool state)
 {
-  #ifdef DEBUG_STARTUP
-    Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
-    //               +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex +", _isImpulse="+_isImpulse
-                    +", (uint8_t) state="+((uint8_t) state));
-  #endif
   bool stateHasChanged = state != _state;
   uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
 

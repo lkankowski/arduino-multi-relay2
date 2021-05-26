@@ -150,7 +150,14 @@ void PinCreator::initExpanders()
 #endif
 
 
-void lkankowski::haltSystem()
+// Function that printf and related will use to print
+int serial_putchar(char c, FILE* f) {
+   if (c == '\n') serial_putchar('\r', f);
+   return Serial.write(c) == 1? 0 : 1;
+};
+
+
+void haltSystem()
 {
   delay(1000);
   assert(0);
@@ -220,6 +227,12 @@ void SerialClass::println(int s) {
 };
 
 SerialClass Serial;
+
+
+void lkankowski::haltSystem()
+{
+  assert(0);
+};
 
 
 #endif
