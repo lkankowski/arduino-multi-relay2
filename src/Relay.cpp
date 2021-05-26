@@ -2,10 +2,6 @@
 
 using namespace lkankowski;
 
-#ifdef DEBUG_STARTUP
-  extern unsigned long debugCounter;
-#endif
-
 
 Relay::Relay(PinInterface * pin)
   : _pin(pin)

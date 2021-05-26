@@ -12,10 +12,13 @@ Configuration::Configuration(const RelayConfigRef & relayConfig, const ButtonCon
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
+      //TODO: read config from PROGMEM
+      // RelayConfigDef relayConfig = {};
+      // PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
-          Serial.println(String("Configuration failed - expander no or number of pins out of range for relay: ") + relayNum);
+          printf_P(PSTR("Configuration failed - expander no or number of pins out of range for relay: %i\n"), relayNum);
           delay(1000);
           assert(0);
         }
@@ -24,13 +27,16 @@ Configuration::Configuration(const RelayConfigRef & relayConfig, const ButtonCon
   #endif
   
   for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++) {
+    //TODO: read config from PROGMEM
+    // ButtonConfigDef buttonConfig = {};
+    // PROGMEM_readAnything(&gButtonConfig[buttonNum], buttonConfig);
+
     #ifdef USE_EXPANDER
       int pin = gButtonConfig[buttonNum].buttonPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
-          Serial.println(String("Configuration failed - expander no or number of pins out of range for button: ") + buttonNum);
-          delay(1000);
-          assert(0);
+          printf_P(PSTR("Configuration failed - expander no or number of pins out of range for button: %i\n"), buttonNum);
+          haltSystem();
         }
       }
     #endif
@@ -41,10 +47,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig, const ButtonCon
     if ((_buttonConfig.config[buttonNum].longClickRelayId != -1) && (getRelayNum(_buttonConfig.config[buttonNum].longClickRelayId) == -1)) fail = 2;
     if ((_buttonConfig.config[buttonNum].doubleClickRelayId != -1) && (getRelayNum(_buttonConfig.config[buttonNum].doubleClickRelayId) == -1)) fail = 3;
     if (fail) {
-      Serial.print("Configuration failed - invalid '");
-      Serial.print(failAction[fail]);
-      Serial.print(" relay ID' for button: ");
-      Serial.println(buttonNum);
+      printf_P(PSTR("Configuration failed - invalid '%s relay ID' for button: %i\n"), failAction[fail], buttonNum);
       haltSystem();
     }
     // TODO: validate if pin is correct to the current board

@@ -58,6 +58,7 @@ class Configuration
     ~Configuration();
 
     int getRelayNum(int) const;
+    int getRelaysCount() const { return _relayConfig.size; };
 
   private:
     const RelayConfigRef & _relayConfig;

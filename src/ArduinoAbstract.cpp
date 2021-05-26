@@ -176,6 +176,13 @@ PinCreator * PinCreator::instance()
   #endif
 
 
+  // Function that printf and related will use to print
+  int serial_putchar(char c, FILE* f) {
+    if (c == '\n') serial_putchar('\r', f);
+    return Serial.write(c) == 1? 0 : 1;
+  };
+
+
   void lkankowski::haltSystem()
   {
     delay(1000);
@@ -234,6 +241,12 @@ PinCreator * PinCreator::instance()
   };
 
   SerialClass Serial;
+
+
+void lkankowski::haltSystem()
+{
+  assert(0);
+};
 
 
 #endif
