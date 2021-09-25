@@ -1,0 +1,5 @@
+## 2.2.1
+reporting REED_SWITCH as S_DOOR in MySensors
+## 2.2.0
+Without sending V_ARMED
+Support MCP23017
