@@ -37,7 +37,8 @@ void Relay::attachPin()
 bool Relay::changeState(bool state)
 {
   #ifdef DEBUG_STARTUP
-    Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
+    Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay(" + _sensorId
+                    + ")::changeState: old_state="+_state+", new_state="+state
     //               +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex +", _isImpulse="+_isImpulse
                     +", (uint8_t) state="+((uint8_t) state));
   #endif

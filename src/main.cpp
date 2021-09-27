@@ -80,7 +80,7 @@ void before()
                      +gRelayConfig[relayNum].relayOptions+";"+gRelayConfig[relayNum].relayDescription);
     }
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - button config");
-    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+    for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
       Serial.println(String("# ")+(debugCounter++)+" > "+gButtonConfig[buttonNum].buttonPin+";"+gButtonConfig[buttonNum].buttonType+";"
                      +gButtonConfig[buttonNum].clickRelayId+";"+gButtonConfig[buttonNum].longClickRelayId+";"
                      +gButtonConfig[buttonNum].doubleClickRelayId+";"+gButtonConfig[buttonNum].buttonDescription);
@@ -88,17 +88,17 @@ void before()
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - EEPROM (first value is version, relay state starts at "+RELAY_STATE_STORAGE+")");
     Serial.print(String("# ")+(debugCounter++)+" ");
     for (int relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
-      Serial.print(EEPROM.read(relayNum));
+      Serial.print(gEeprom.read(relayNum));
       Serial.print(",");
     }
     Serial.println();
     Serial.println(String("# ")+(debugCounter++)+" Debug startup - buttons pin state");
     Serial.print(String("# ")+(debugCounter++)+" ");
-    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+    for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
       pinMode(gButtonConfig[buttonNum].buttonPin, INPUT_PULLUP);
     }
     delay(200);
-    for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
+    for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
       Serial.print(digitalRead(gButtonConfig[buttonNum].buttonPin));
       Serial.print(",");
     }
