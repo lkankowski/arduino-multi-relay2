@@ -88,6 +88,20 @@ namespace lkankowski {
     
   #endif
 
+  class VirtualPin : public PinInterface
+  {
+    public:
+      VirtualPin(uint8_t);
+
+      void pinMode(uint8_t mode) const override;
+      uint8_t digitalRead() const override;
+      void digitalWrite(uint8_t val) const override;
+      
+    private:
+      uint8_t _pin;
+  };
+
+
   #ifndef ARDUINO
   class FakePin : public PinInterface
   {

@@ -17,7 +17,7 @@ using namespace lkankowski;
 
 #include <config.h>
 
-RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 
 Eeprom gEeprom;
 RelayService gRelayService(gRelayConfigRef, gEeprom);
@@ -627,6 +627,13 @@ void test_button_to_relay_state()
 };
 
 
+void test_PinCreator_instance()
+{
+  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
+  PinCreator pinCreator;
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
+};
+
 
 int main(int argc, char **argv)
 {
@@ -653,6 +660,7 @@ int main(int argc, char **argv)
   RUN_TEST(test_button_ding_dong_only);
   RUN_TEST(test_button_reed_switch_only);
   RUN_TEST(test_button_to_relay_state);
+  RUN_TEST(test_PinCreator_instance);
 
   return UNITY_END();
 };

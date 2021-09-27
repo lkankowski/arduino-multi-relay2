@@ -180,9 +180,11 @@ String RelayService::toString(int relayNum)
 {
   return String("## Relay ") + _relays[relayNum]->getSensorId()
           + ": state=" + _relays[relayNum]->getState()
-          //+ ", pin_state=" + _pin.digitalRead()
+        #ifdef ARDUINO
+          + ", pin_state=" + ArduinoPin::digitalRead(_relayConfig.config[relayNum].relayPin)
+        #endif
           + ", store_eeprom=" + _storeRelayToEEPROM[relayNum]
           + ", eeprom=" + _eeprom.read(RELAY_STATE_STORAGE + relayNum)
-          + ", DependsOn=" + _relayDependsOn[relayNum]
+          + ", DependsOn=" + (_relayDependsOn[relayNum] == -1 ? -1 : _relays[_relayDependsOn[relayNum]]->getSensorId())
           + ", " + _relays[relayNum]->getDescription();
 };

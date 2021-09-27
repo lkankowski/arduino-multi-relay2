@@ -17,8 +17,8 @@ class Relay {
     bool changeState(bool);
     bool getState() { return(_state); };
     int getSensorId() { return(_sensorId); }; //TODO: refactor: move to RelayService
-    void reportAsSensor() { _reportAsSensor = true; };
-    bool isSensor() { return _reportAsSensor; };
+    void reportAsSensor() { _reportAsSensor = true; }; //TODO: remove from this class
+    bool isSensor() { return _reportAsSensor; }; //TODO: remove from this class
     const char * getDescription() { return(_description); };
 
   private:

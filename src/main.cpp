@@ -24,7 +24,7 @@ const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
   #endif
   PinCreator gPinCreator(gExpander, gExpanderAddresses, sizeof(gExpanderAddresses));
 #else
-  PinCreator gPinCreator();
+  PinCreator gPinCreator;
 #endif
 
 int gTurnOffDependentsCounter = 2000;
@@ -104,6 +104,12 @@ void before()
     }
     Serial.println();
   #endif
+
+  if (PinCreator::instance() == nullptr) {
+    Serial.println("PinCreator instance is NULL");
+    delay(1000);
+    assert(0);
+  }
 
   // validate config
   #ifdef USE_EXPANDER
@@ -253,23 +259,6 @@ void loop()
   if (--gTurnOffDependentsCounter <= 0) {
     gRelayService.turnOffDependent(loopStartMillis);
     gTurnOffDependentsCounter = 500;
-
-    // debug feature
-    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
-      if ((gRelayConfig[relayNum].relayPin >= 0) &&
-          (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin) ==
-                                                (gRelayConfig[relayNum].relayOptions & RELAY_TRIGGER_HIGH))))
-      {
-        Serial.println(String("# Error state relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
-                       + ", pin_state=" + ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin));
-      }
-      if (((gRelayConfig[relayNum].relayOptions & RELAY_STARTUP_MASK) == 0) &&
-          (gRelayService.getState(relayNum) != (gEeprom.read(RELAY_STATE_STORAGE + relayNum) == 1)))
-      {
-        Serial.println(String("# Error eeprom relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
-                       + ", eeprom=" + gEeprom.read(RELAY_STATE_STORAGE + relayNum));
-      }
-    }
   }
 };
 
@@ -310,18 +299,18 @@ void receive(const MyMessage &message)
       }
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
-      if (debugCommand == 1) {
+      if (debugCommand == 1) { // show stats
         #ifdef DEBUG_STATS
           debugStatsOn = true;
           loopCounter = 0;
           send(debugMessage.set("toogle debug stats"));
           gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
         #endif
-      } else if (debugCommand == 2) {
+      } else if (debugCommand == 2) { // dump relays state
         for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
           Serial.println(gRelayService.toString(relayNum));
         }
-      } else if (debugCommand == 3) {
+      } else if (debugCommand == 3) { // dump buttons state
         for (int buttonNum = 0; buttonNum < gButtonConfigRef.size; buttonNum++) {
           Serial.println(String("# Button ") + buttonNum + ": " + gButtonService.toString(buttonNum));
         }
@@ -337,6 +326,23 @@ void receive(const MyMessage &message)
         resetFunc();
       } else if (debugCommand == 6) { // reset
         resetFunc();
+      } else if (debugCommand == 7) { // check relays state & eeprom
+        // debug feature
+        for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
+          if ((gRelayConfig[relayNum].relayPin >= 0) &&
+              (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin) ==
+                                                    (gRelayConfig[relayNum].relayOptions & RELAY_TRIGGER_HIGH))))
+          {
+            Serial.println(String("# Error state relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
+                          + ", pin_state=" + ArduinoPin::digitalRead(gRelayConfig[relayNum].relayPin));
+          }
+          if (((gRelayConfig[relayNum].relayOptions & RELAY_STARTUP_MASK) == 0) &&
+              (gRelayService.getState(relayNum) != (gEeprom.read(RELAY_STATE_STORAGE + relayNum) == 1)))
+          {
+            Serial.println(String("# Error eeprom relay ") + gRelayService.getSensorId(relayNum) + ": state=" + gRelayService.getState(relayNum)
+                          + ", eeprom=" + gEeprom.read(RELAY_STATE_STORAGE + relayNum));
+          }
+        }
       }
     }
   }

@@ -25,6 +25,7 @@ TODO:
 - wywalenie "String"???
 - osobne "env:" do testowania konfiguracji
 - wyrzucić walidację z arduino
+- urządzenia zależne nie są raportowane przez MySensors
 - stringi do PROGMEM
 - konfiguracja do PROGMEM??
 - limitowanie mocy (power cap)
