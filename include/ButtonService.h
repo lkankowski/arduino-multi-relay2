@@ -8,7 +8,7 @@ namespace lkankowski {
 class ButtonService
 {
   public:
-    ButtonService(const ButtonConfigRef &, unsigned int);
+    ButtonService(Configuration &, unsigned int);
     ~ButtonService();
 
     // void setup(); 
@@ -19,7 +19,7 @@ class ButtonService
     String toString(int);
 
   private:
-    const ButtonConfigRef & _buttonConfig;
+    Configuration & _configuration;
     ButtonInterface ** _button;  //TODO: check shared_ptr
 };
 

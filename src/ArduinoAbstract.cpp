@@ -177,7 +177,8 @@ PinCreator * PinCreator::instance()
 
 
   // Function that printf and related will use to print
-  int serial_putchar(char c, FILE* f) {
+  int serial_putchar(char c, FILE* f)
+  {
     if (c == '\n') serial_putchar('\r', f);
     return Serial.write(c) == 1? 0 : 1;
   };

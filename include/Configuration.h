@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <Vector.h>
 
 namespace lkankowski {
 
@@ -21,48 +22,57 @@ enum ButtonType {
 };
 
 
-typedef struct {
+struct RelayConfigDef {
   int sensorId;
   int relayPin;
   uint8_t relayOptions;
   int dependsOn;
-  const char * relayDescription;
-} RelayConfigDef;
+  char relayDescription[25];
+};
 
 
-typedef struct {
-  const RelayConfigDef * config;
-  int size;
-} RelayConfigRef;
-
-
-typedef struct {
+struct ButtonConfigDef {
   int buttonPin;
   ButtonType buttonType;
   int clickRelayId;
   int longClickRelayId;
   int doubleClickRelayId;
-  const char * const buttonDescription;
-} ButtonConfigDef;
-
-typedef struct {
-  const ButtonConfigDef * config;
-  int size;
-} ButtonConfigRef;
-
+  char buttonDescription[25];
+};
 
 class Configuration
 {
   public:
-    Configuration(const RelayConfigRef &, const ButtonConfigRef &);
+    Configuration(const Vector<const RelayConfigDef> &, const Vector<const ButtonConfigDef> &);
     ~Configuration();
 
     int getRelayNum(int) const;
-    int getRelaysCount() const { return _relayConfig.size; };
+    size_t getRelaysCount() const { return _relayConfig.size(); };
+    int getRelayPin(size_t relayNum);
+    uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
+    uint8_t getRelayDependsOn(size_t relayNum);
+    int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
+    const char * getRelayDescription(size_t relayNum);
+
+    size_t getButtonsCount() const { return _buttonConfig.size(); };
+    ButtonType getButtonType(size_t buttonNum);
+    int getButtonPin(size_t buttonNum);
+    const char * getButtonDescription(size_t buttonNum);
 
   private:
-    const RelayConfigRef & _relayConfig;
-    const ButtonConfigRef & _buttonConfig;
+    void loadRelayConfigFromPROGMEM(size_t);
+    void loadButtonConfigFromPROGMEM(size_t);
+
+    const Vector<const RelayConfigDef> & _relayConfig;
+    RelayConfigDef _relayConfigEntryBuf;
+    size_t _relayNumInBuf = -1;
+
+    uint8_t * _relaySensorId;
+    uint8_t * _relayOptions;
+
+    const Vector<const ButtonConfigDef> & _buttonConfig;
+    ButtonConfigDef _buttonConfigEntryBuf;
+    size_t _buttonNumInBuf = -1;
 };
 
 }; // namespace

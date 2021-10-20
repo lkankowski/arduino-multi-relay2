@@ -8,7 +8,7 @@ unsigned long ButtonInterface::_longclickInterval = 800;
 bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int debounceInterval, const char * const description)
+ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int debounceInterval)
 {
   HardwareSwitchInterface * switchHW =
     HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
@@ -18,19 +18,18 @@ ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int
 
   switch(type & 0x0f)
   {
-    case MONO_STABLE: return new MonoStableButton(switchHW, description);
-    case BI_STABLE:   return new BiStableButton(switchHW, description);
-    case DING_DONG:   return new DingDongButton(switchHW, description);
-    case REED_SWITCH: return new ReedSwitch(switchHW, description);
+    case MONO_STABLE: return new MonoStableButton(switchHW);
+    case BI_STABLE:   return new BiStableButton(switchHW);
+    case DING_DONG:   return new DingDongButton(switchHW);
+    case REED_SWITCH: return new ReedSwitch(switchHW);
   }
   delete switchHW;
   return nullptr;
 };
 
 
-ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW, const char * const description)
+ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW)
     : _switch(switchHW)
-    , _description(description)
     , _clickRelayNum(-1)
     , _longclickRelayNum(-1)
     , _doubleclickRelayNum(-1)
@@ -45,23 +44,23 @@ ButtonInterface::~ButtonInterface()
 };
 
 
-MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW, const char * const description)
-  : ButtonInterface(switchHW, description)
+MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
 {};
 
 
-BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW, const char * const description)
-  : ButtonInterface(switchHW, description)
+BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
 {};
 
 
-DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW, const char * const description)
-  : ButtonInterface(switchHW, description)
+DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
 {};
 
 
-ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW, const char * const description)
-  : ButtonInterface(switchHW, description)
+ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
 {};
 
 
@@ -78,11 +77,6 @@ void ButtonInterface::attachPin()
   _switch->attachPin();
 };
 
-
-String ButtonInterface::toString()
-{
-    return String("state=") + _switch->getState() + "; " + _description;
-};
 
 // static
 void ButtonInterface::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval)
