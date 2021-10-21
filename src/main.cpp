@@ -78,7 +78,7 @@ void before()
     #endif
 
     printf_P(PSTR("# Debug startup - relay config\n"), );
-    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
       RelayConfigDef relayConfig = {};
       printf_P(
         PSTR("# > %i;%i;%i;%s;\n"), gConfiguration.getRelaySensorId(relayNum),
@@ -97,18 +97,18 @@ void before()
     }
     printf_P(PSTR("# Debug startup - EEPROM (first value is version, relay state starts at %i\n"), RELAY_STATE_STORAGE);
     printf_P(PSTR("# > "));
-    for (int relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
+    for (int relayNum = 0; relayNum < gRelayConfigRef.size()+1; relayNum++) {
       printf("%i,", gEeprom.read(relayNum));
     }
     printf("\n");
     printf_P(PSTR("# Debug startup - buttons pin state\n"));
     printf_P(PSTR("# > "));
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      pinMode(gButtonConfig[buttonNum].buttonPin, INPUT_PULLUP);
+      pinMode(gConfiguration.getButtonPin(buttonNum), INPUT_PULLUP);
     }
     delay(200);
     for (int buttonNum = 0; buttonNum < gNumberOfButtons; buttonNum++) {
-      printf("%i,",digitalRead(gButtonConfig[buttonNum].buttonPin));
+      printf("%i,",digitalRead(gConfiguration.getButtonPin(buttonNum)));
     }
     printf("\n");
   #endif
@@ -136,16 +136,16 @@ void before()
   // gButtonService.setup();
   for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++)
   {
-    int clickActionRelayNum = gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
+    int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
     gButtonService.setAction(buttonNum,
                             clickActionRelayNum,
-                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+                            gConfiguration.getRelayNum(gConfiguration.getButtonLongClickAction(buttonNum)),
+                            gConfiguration.getRelayNum(gConfiguration.getButtonDoubleClickAction(buttonNum)));
     gButtonService.attachPin(buttonNum);
-    if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
+    if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
       gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
-    } else if (((gButtonConfig[buttonNum].buttonType & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
+    } else if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
       gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
     }
   }
@@ -356,9 +356,9 @@ int main( int argc, char **argv) {
   // for (int buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++)
   // {
   //   gButtonService.setAction(buttonNum,
-  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
-  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-  //                           gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+  //                           gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum)),
+  //                           gConfiguration.getRelayNum(gConfiguration.getButtonLongClickAction(buttonNum)),
+  //                           gConfiguration.getRelayNum(gConfiguration.getButtonDoubleClickAction(buttonNum)));
   //   Serial.println("# setup() - setAction");
   //   gButtonService.attachPin(buttonNum);
   //   Serial.println("# setup() - attachPin");

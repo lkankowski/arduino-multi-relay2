@@ -58,7 +58,10 @@ class Configuration
     ButtonType getButtonType(size_t buttonNum);
     int getButtonPin(size_t buttonNum);
     const char * getButtonDescription(size_t buttonNum);
-
+    int getButtonClickAction(size_t buttonNum);
+    int getButtonLongClickAction(size_t buttonNum);
+    int getButtonDoubleClickAction(size_t buttonNum);
+    
   private:
     void loadRelayConfigFromPROGMEM(size_t);
     void loadButtonConfigFromPROGMEM(size_t);

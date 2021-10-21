@@ -22,10 +22,8 @@ Configuration::Configuration(const Vector<const RelayConfigDef> & relayConfig,
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
     for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
-      //TODO: read config from PROGMEM
-      // RelayConfigDef relayConfig = {};
-      // PROGMEM_readAnything(&gRelayConfig[relayNum], relayConfig);
-      int pin = gRelayConfig[relayNum].relayPin;
+      loadRelayConfigFromPROGMEM(relayNum);
+      int pin = _relayConfigEntryBuf.relayPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
           printf_P(PSTR("Configuration failed - expander no or number of pins out of range for relay: %i\n"), relayNum);
@@ -119,6 +117,27 @@ const char * Configuration::getButtonDescription(size_t buttonNum)
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonDescription;
+};
+
+
+int Configuration::getButtonClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.clickRelayId;
+};
+
+
+int Configuration::getButtonLongClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.longClickRelayId;
+};
+
+
+int Configuration::getButtonDoubleClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.doubleClickRelayId;
 };
 
 
