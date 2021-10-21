@@ -4,6 +4,7 @@
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
 #include <RelayService.h>
+#include <RelayCallback.h>
 #include <ButtonService.h>
 #define MY_GATEWAY_SERIAL
 #include <MySensors.h>
@@ -46,7 +47,10 @@ ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeo
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
-RelayService gRelayService(gConfiguration, gEeprom);
+RelayCallback gRelaysForCallback[sizeof(gRelayConfig) / sizeof(RelayConfigDef)];
+Vector<RelayCallback> gRelaysForCallbackRef(gRelaysForCallback, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
+
+RelayService gRelayService(gConfiguration, gEeprom, gRelaysForCallbackRef);
 ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL);
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
@@ -130,9 +134,9 @@ void before()
   {
     int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
     gButtonService.setAction(buttonNum,
-                            clickActionRelayNum,
-                            gConfiguration.getRelayNum(gConfiguration.getButtonLongClickAction(buttonNum)),
-                            gConfiguration.getRelayNum(gConfiguration.getButtonDoubleClickAction(buttonNum)));
+                             gRelaysForCallback[clickActionRelayNum],
+                             gRelaysForCallback[gConfiguration.getButtonLongClickAction(buttonNum)],
+                             gRelaysForCallback[gConfiguration.getButtonDoubleClickAction(buttonNum)]);
     gButtonService.attachPin(buttonNum);
     if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);

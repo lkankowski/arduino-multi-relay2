@@ -1,6 +1,8 @@
 #pragma once
 
+#include <Vector.h>
 #include <Relay.h>
+#include <RelayCallback.h>
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
 #include <Configuration.h>
@@ -15,7 +17,7 @@ const uint8_t RELAY_STARTUP_MASK = RELAY_STARTUP_ON | RELAY_STARTUP_OFF;
 class RelayService {
 
   public:
-    RelayService(Configuration &, EepromInterface &);
+    RelayService(Configuration &, EepromInterface &, Vector<RelayCallback> &);
     ~RelayService();
 
     void initialize(bool);

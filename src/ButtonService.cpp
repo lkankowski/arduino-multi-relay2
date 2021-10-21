@@ -11,7 +11,13 @@ ButtonService::ButtonService(Configuration & configuration, unsigned int debounc
   {
     _button[buttonNum] = ButtonInterface::create(_configuration.getButtonType(buttonNum),
                                                  _configuration.getButtonPin(buttonNum),
-                                                 debounceInterval);
+                                                 debounceInterval,
+                                                 _configuration.getButtonLongClickAction(buttonNum) != -1,
+                                                 _configuration.getButtonDoubleClickAction(buttonNum) != -1);
+    // setAction(buttonNum,
+    //           _configuration.getRelayNum(_configuration.getButtonClickAction(buttonNum)),
+    //           _configuration.getRelayNum(_configuration.getButtonLongClickAction(buttonNum)),
+    //           _configuration.getRelayNum(_configuration.getButtonDoubleClickAction(buttonNum)));
   }
 };
 
@@ -38,9 +44,12 @@ ButtonService::~ButtonService()
 //   }
 // }; 
 
-void ButtonService::setAction(size_t buttonNum, int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
+void ButtonService::setAction(size_t buttonNum,
+                              RelayCallbackInterface & clickRelayNum,
+                              RelayCallbackInterface & longclickRelayNum,
+                              RelayCallbackInterface & doubleclickRelayNum)
 {
-  _button[buttonNum]->setAction(clickRelayNum, longclickRelayNum, doubleclickRelayNum);
+  //_button[buttonNum]->setAction(clickRelayNum, longclickRelayNum, doubleclickRelayNum);
 };
 
 

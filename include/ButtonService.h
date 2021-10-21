@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Button.h>
+#include <RelayCallbackInterface.h>
 #include <Configuration.h>
 
 namespace lkankowski {
@@ -12,7 +13,7 @@ class ButtonService
     ~ButtonService();
 
     // void setup(); 
-    void setAction(size_t, int, int, int); 
+    void setAction(size_t, RelayCallbackInterface &, RelayCallbackInterface &, RelayCallbackInterface &); 
     void attachPin(size_t);
     int checkEvent(size_t, unsigned long);
     bool getRelayState(size_t, bool);
