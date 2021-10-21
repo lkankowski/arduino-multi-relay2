@@ -35,30 +35,30 @@ Configuration::Configuration(const Vector<const RelayConfigDef> & relayConfig,
     }
   #endif
 
-  // for (size_t buttonNum = 0; buttonNum < _buttonConfig.size(); buttonNum++) {
-  //   loadButtonConfigFromPROGMEM(buttonNum);
+  for (size_t buttonNum = 0; buttonNum < _buttonConfig.size(); buttonNum++) {
+    loadButtonConfigFromPROGMEM(buttonNum);
 
-  //   #ifdef USE_EXPANDER
-  //     int pin = _buttonConfigEntryBuf.buttonPin;
-  //     if (pin & 0xff00) {
-  //       if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
-  //         printf_P(PSTR("Configuration failed - expander no or number of pins out of range for button: %i\n"), buttonNum);
-  //         haltSystem();
-  //       }
-  //     }
-  //   #endif
+    #ifdef USE_EXPANDER
+      int pin = _buttonConfigEntryBuf.buttonPin;
+      if (pin & 0xff00) {
+        if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
+          printf_P(PSTR("Configuration failed - expander no or number of pins out of range for button: %i\n"), buttonNum);
+          haltSystem();
+        }
+      }
+    #endif
 
-  //   const char * failAction[] = {"OK", "click", "long-press", "double-click"};
-  //   int fail = 0;
-  //   if ((_buttonConfigEntryBuf.clickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.clickRelayId) == -1)) fail = 1;
-  //   if ((_buttonConfigEntryBuf.longClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.longClickRelayId) == -1)) fail = 2;
-  //   if ((_buttonConfigEntryBuf.doubleClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.doubleClickRelayId) == -1)) fail = 3;
-  //   if (fail) {
-  //     printf_P(PSTR("Configuration failed - invalid '%s relay ID' for button: %i\n"), failAction[fail], buttonNum);
-  //     haltSystem();
-  //   }
-  //   // TODO: validate if pin is correct to the current board
-  // }
+    const char * failAction[] = {"OK", "click", "long-press", "double-click"};
+    int fail = 0;
+    if ((_buttonConfigEntryBuf.clickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.clickRelayId) == -1)) fail = 1;
+    if ((_buttonConfigEntryBuf.longClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.longClickRelayId) == -1)) fail = 2;
+    if ((_buttonConfigEntryBuf.doubleClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.doubleClickRelayId) == -1)) fail = 3;
+    if (fail) {
+      printf_P(PSTR("Configuration failed - invalid '%s relay ID' for button: %i\n"), failAction[fail], buttonNum);
+      haltSystem();
+    }
+    // TODO: validate if pin is correct to the current board
+  }
 };
 
 
@@ -119,6 +119,27 @@ const char * Configuration::getButtonDescription(size_t buttonNum)
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonDescription;
+};
+
+
+int Configuration::getButtonClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.clickRelayId;
+};
+
+
+int Configuration::getButtonLongClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.longClickRelayId;
+};
+
+
+int Configuration::getButtonDoubleClickAction(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.doubleClickRelayId;
 };
 
 

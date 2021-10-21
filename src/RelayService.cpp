@@ -4,7 +4,7 @@
 using namespace lkankowski;
 
 
-RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom)
+RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom, Vector<RelayCallback> & relayCallback)
   : _configuration(configuration)
   , _eeprom(eeprom)
   , _impulsePending(0)
@@ -16,7 +16,9 @@ RelayService::RelayService(Configuration & configuration, EepromInterface & eepr
   for (size_t relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     _pin[relayNum] = PinCreator::instance()->create(_configuration.getRelayPin(relayNum));
     _relays[relayNum] = new Relay(_pin[relayNum]);
+    relayCallback[relayNum].setRelayNum(relayNum);
   }
+  RelayCallback::setRelayServiceInstance(this);
   _storeRelayToEEPROM = new bool[_configuration.getRelaysCount()];
   _relayIsImpulse = new bool[_configuration.getRelaysCount()];
   _relayImpulseStartMillis = new unsigned long[_configuration.getRelaysCount()];

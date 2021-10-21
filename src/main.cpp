@@ -4,6 +4,7 @@
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
 #include <RelayService.h>
+#include <RelayCallback.h>
 #include <ButtonService.h>
 #define MY_GATEWAY_SERIAL
 #include <MySensors.h>
@@ -46,7 +47,10 @@ Vector<const ButtonConfigDef> gButtonConfigRef(gButtonConfig, sizeof(gButtonConf
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
-RelayService gRelayService(gConfiguration, gEeprom);
+RelayCallback gRelaysForCallback[sizeof(gRelayConfig) / sizeof(RelayConfigDef)];
+Vector<RelayCallback> gRelaysForCallbackRef(gRelaysForCallback, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
+
+RelayService gRelayService(gConfiguration, gEeprom, gRelaysForCallbackRef);
 ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL);
 
 FILE serial_stdout;
@@ -136,11 +140,11 @@ void before()
   // gButtonService.setup();
   for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++)
   {
-    int clickActionRelayNum = gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId);
+    int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
     gButtonService.setAction(buttonNum,
-                            clickActionRelayNum,
-                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].longClickRelayId),
-                            gConfiguration.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+                             gRelaysForCallback[clickActionRelayNum],
+                             gRelaysForCallback[gConfiguration.getButtonLongClickAction(buttonNum)],
+                             gRelaysForCallback[gConfiguration.getButtonDoubleClickAction(buttonNum)]);
     gButtonService.attachPin(buttonNum);
     if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
