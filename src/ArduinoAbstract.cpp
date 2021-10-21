@@ -250,5 +250,11 @@ void lkankowski::haltSystem()
 };
 
 
+void lkankowski::haltSystem()
+{
+  assert(0);
+};
+
+
 #endif
 
