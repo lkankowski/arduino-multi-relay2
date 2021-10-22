@@ -16,7 +16,7 @@ class ButtonService
     void attachPin(int);
     int checkEvent(int, unsigned long);
     bool getRelayState(int, bool);
-    String toString(int);
+    void printDebug(int);
 
   private:
     Configuration & _configuration;

@@ -26,7 +26,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
       int pin = _relayConfigEntryBuf.relayPin;
       if (pin & 0xff00) {
         if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
-          printf_P(PSTR("Configuration failed - expander no or number of pins out of range for relay: %i\n"), relayNum);
+          Serial << F("Configuration failed - expander no or number of pins out of range for relay: ") << relayNum << "\n";
           haltSystem();
         }
       }
@@ -40,7 +40,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
   //     int pin = _buttonConfigEntryBuf.buttonPin;
   //     if (pin & 0xff00) {
   //       if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
-  //         printf_P(PSTR("Configuration failed - expander no or number of pins out of range for button: %i\n"), buttonNum);
+  //         Serial << F("Configuration failed - expander no or number of pins out of range for button: ") << buttonNum << "\n";
   //         haltSystem();
   //       }
   //     }
@@ -52,7 +52,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
   //   if ((_buttonConfigEntryBuf.longClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.longClickRelayId) == -1)) fail = 2;
   //   if ((_buttonConfigEntryBuf.doubleClickRelayId != -1) && (getRelayNum(_buttonConfigEntryBuf.doubleClickRelayId) == -1)) fail = 3;
   //   if (fail) {
-  //     printf_P(PSTR("Configuration failed - invalid '%s relay ID' for button: %i\n"), failAction[fail], buttonNum);
+  //     Serial << F("Configuration failed - invalid '") << failAction[fail] << F(" relay ID' for button: ") << buttonNum << "\n";
   //     haltSystem();
   //   }
   //   // TODO: validate if pin is correct to the current board

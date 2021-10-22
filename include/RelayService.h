@@ -29,7 +29,7 @@ class RelayService {
     void reportAsSensor(int relayNum) { _reportAsSensor[relayNum] = true; };
     bool isSensor(int relayNum) const { return _reportAsSensor[relayNum]; };
     const char * getDescription(int);
-    String toString(int);
+    void printDebug(int);
 
   private:
     RelayPtr * _relays;

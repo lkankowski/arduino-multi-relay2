@@ -1,5 +1,4 @@
 #include <RelayService.h>
-//#include <iostream>
 
 using namespace lkankowski;
 
@@ -90,6 +89,11 @@ bool RelayService::changeState(int relayNum, bool relayState, unsigned long mill
     changeState(_relayDependsOn[relayNum], true, millis);
     _isAnyDependentOn = true;
   }
+  #ifdef DEBUG_STARTUP
+    Serial << F("# ") << millis << F(" Relay(") << _configuration.getRelaySensorId(relayNum)
+           << F(")::changeState: old_state=") << _relays[relayNum]->getState()
+           << F(", new_state=") << relayState << "\n";
+  #endif
   bool stateHasChanged = _relays[relayNum]->changeState(relayState);
 
   if (_storeRelayToEEPROM[relayNum] && stateHasChanged) {
@@ -164,15 +168,15 @@ const char * RelayService::getDescription(int relayNum)
 };
 
 
-String RelayService::toString(int relayNum)
+void RelayService::printDebug(int relayNum)
 {
-  return String("## Relay ") + _configuration.getRelaySensorId(relayNum)
-          + ": state=" + _relays[relayNum]->getState()
+  Serial << F("## Relay ") << _configuration.getRelaySensorId(relayNum)
+         << F(": state=") << _relays[relayNum]->getState()
         #ifdef ARDUINO
-          + ", pin_state=" + ArduinoPin::digitalRead(_configuration.getRelayPin(relayNum))
+         << F(", pin_state=") << ArduinoPin::digitalRead(_configuration.getRelayPin(relayNum))
         #endif
-          + ", store_eeprom=" + _storeRelayToEEPROM[relayNum]
-          + ", eeprom=" + _eeprom.read(RELAY_STATE_STORAGE + relayNum)
-          + ", DependsOn=" + (_relayDependsOn[relayNum] == -1 ? -1 : _configuration.getRelaySensorId(_relayDependsOn[relayNum]))
-          + ", " + _configuration.getRelayDescription(relayNum);
+         << F(", store_eeprom=") << _storeRelayToEEPROM[relayNum]
+         << F(", eeprom=") << _eeprom.read(RELAY_STATE_STORAGE + relayNum)
+         << F(", DependsOn=") << (_relayDependsOn[relayNum] == -1 ? -1 : _configuration.getRelaySensorId(_relayDependsOn[relayNum]))
+         << F(", ") << _configuration.getRelayDescription(relayNum);
 };

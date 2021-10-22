@@ -102,17 +102,17 @@ int MonoStableButton::checkEvent(unsigned long millis)
   if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
     #ifdef DEBUG_ACTION
-      printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
+      Serial << F("Click for relay ") << relayNum << "\n";
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
     #ifdef DEBUG_ACTION
-      printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
+      Serial << F("DoubleClick for relay ") << relayNum << "\n";
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
     #ifdef DEBUG_ACTION
-      printf_P(PSTR("%s - LongPress for relay %i"), _description, relayNum);
+      Serial << F("LongPress for relay ") << relayNum << "\n";
     #endif
   }
   return relayNum;
@@ -127,15 +127,13 @@ int BiStableButton::checkEvent(unsigned long millis)
   int relayNum = -1;
   if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
-    // std::cout << "CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - Click for relay " + relayNum);
+      Serial << F("Click for relay ") << relayNum << "\n";
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
-    // std::cout << "DOUBLE-CLICK!" << std::endl;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
+      Serial << F("DoubleClick for relay ") << relayNum << "\n";
     #endif
   }
   return relayNum;
@@ -147,7 +145,6 @@ int BiStableButton::checkEvent(unsigned long millis)
 int DingDongButton::checkEvent(unsigned long millis)
 {
   if (_switch->update(millis)) {
-    // std::cout << "DING_DONG!" << std::endl;
     return _clickRelayNum;
   }
   return -1;
@@ -157,7 +154,6 @@ int DingDongButton::checkEvent(unsigned long millis)
 int ReedSwitch::checkEvent(unsigned long millis)
 {
   if (_switch->update(millis)) {
-    // std::cout << "REED_SWITCH!" << std::endl;
     return _clickRelayNum;
   }
   return -1;

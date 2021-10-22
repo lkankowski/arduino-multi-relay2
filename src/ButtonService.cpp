@@ -62,7 +62,7 @@ bool ButtonService::getRelayState(int buttonNum, bool relayState)
 };
 
 
-String ButtonService::toString(int buttonNum)
+void ButtonService::printDebug(int buttonNum)
 {
-  return String("state=") + _button[buttonNum]->getState() + "; " + _configuration.getButtonDescription(buttonNum);
+  Serial << F("state=") << _button[buttonNum]->getState() << "; " << _configuration.getButtonDescription(buttonNum) << "\n";
 };

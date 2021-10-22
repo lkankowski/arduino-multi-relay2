@@ -6,28 +6,20 @@
 #define str(a) #a
 
 #ifdef ARDUINO
-#include <Arduino.h>
+  #include <Arduino.h>
 
-#if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
-  #if defined(EXPANDER_PCF8574)
-    #include "PCF8574.h"
-    #define EXPANDER_PINS 8
-  #elif defined(EXPANDER_MCP23017)
-    #include "Adafruit_MCP23017.h"
-    #define EXPANDER_PINS 16
+  #if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
+    #if defined(EXPANDER_PCF8574)
+      #include "PCF8574.h"
+      #define EXPANDER_PINS 8
+    #elif defined(EXPANDER_MCP23017)
+      #include "Adafruit_MCP23017.h"
+      #define EXPANDER_PINS 16
+    #endif
+    #define USE_EXPANDER
+    #include <Wire.h>    // Required for I2C communication
+    #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
   #endif
-  #define USE_EXPANDER
-  #include <Wire.h>    // Required for I2C communication
-  #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
-#endif
-
-template <typename T> void PROGMEM_readAnything(const T * sce, T& dest) {
-  memcpy_P(&dest, sce, sizeof (T));
-};
-
-
-// Function that printf and related will use to print
-int serial_putchar(char c, FILE* f);
 
 #endif //ARDUINO
 
@@ -158,13 +150,24 @@ namespace lkankowski {
   };
 
   void haltSystem();
-  
+
+  template <typename T> void PROGMEM_readAnything(const T * sce, T& dest) {
+  #ifdef ARDUINO
+    memcpy_P(&dest, sce, sizeof (T));
+  #else
+    memcpy(&dest, sce, sizeof (T));
+  #endif
+  };
+
+  template<class T> inline Print & operator <<(Print & obj, T arg) { obj.print(arg); return obj; };
+
 } // namespace lkankowski
 
 
+// only for native compilation (mainly tests)
 #ifndef ARDUINO
 
-#include <WString.h>
+//#include <WString.h>
 
 #define HIGH 0x1
 #define LOW  0x0
@@ -177,12 +180,6 @@ namespace lkankowski {
 
 unsigned long millis(void);
 void delay(int);
-
-template <typename T> void PROGMEM_readAnything(const T * sce, T& dest) {
-  memcpy(&dest, sce, sizeof (T));
-};
-
-// int serial_putchar(char c, FILE* f);
 
 class SerialClass
 {
