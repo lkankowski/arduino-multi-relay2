@@ -19,8 +19,8 @@ using namespace lkankowski;
 
 #include <config.h>
 
-Vector<const RelayConfigDef> gRelayConfigRef(gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
-Vector<const ButtonConfigDef> gButtonConfigRef(gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef));
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 //const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
@@ -135,7 +135,7 @@ void test_relayservice()
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
   };
-  Vector<const RelayConfigDef> relayConfigRef(relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef));
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);
@@ -163,7 +163,7 @@ void test_relay_startup_eeprom()
     {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW | RELAY_IMPULSE, -1, "Lamp 4"},
   };
-  Vector<const RelayConfigDef> relayConfigRef(relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef));
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -198,7 +198,7 @@ void test_relay_impulse()
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
-  Vector<const RelayConfigDef> relayConfigRef(relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef));
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -228,7 +228,7 @@ void test_relay_dependsOn()
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
     {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
   };
-  Vector<const RelayConfigDef> relayConfigRef(relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef));
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);

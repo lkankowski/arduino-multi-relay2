@@ -41,8 +41,8 @@ MyMessage myMessage; // MySensors - Sending Data
   MyMessage debugMessage(255, V_TEXT);
 #endif
 
-Vector<const RelayConfigDef> gRelayConfigRef(gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
-Vector<const ButtonConfigDef> gButtonConfigRef(gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef));
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
@@ -134,7 +134,7 @@ void before()
   MonoStableButton::clickTriggerWhenPressed(true);
 
   // gButtonService.setup();
-  for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++)
+  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++)
   {
     int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
     gButtonService.setAction(buttonNum,
@@ -161,7 +161,7 @@ void before()
 void setup()
 {
   // Send state to MySensor Gateway
-  for (size_t relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
+  for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
     myMessage.setSensor(gRelayService.getSensorId(relayNum));
     myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
     send(myMessage.set(gRelayService.getState(relayNum))); // send current state
@@ -181,7 +181,7 @@ void loop()
   #endif
 
   if (gRelayService.isImpulsePending()) {
-    for (size_t relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
+    for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
       if (gRelayService.impulseProcess(relayNum, loopStartMillis)) {
         myMessage.setSensor(gRelayService.getSensorId(relayNum));
         send(myMessage.set(0));
@@ -189,7 +189,7 @@ void loop()
     }
   }
 
-  for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++) {
+  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
     
     int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
     if (relayNum > -1) {
@@ -240,7 +240,7 @@ void presentation()
   sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
   
   // Register every relay as separate sensor
-  for (size_t relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
+  for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
     present(gRelayService.getSensorId(relayNum),
             gRelayService.isSensor(relayNum) ? S_DOOR : S_BINARY,
             gRelayService.getDescription(relayNum));
@@ -278,11 +278,11 @@ void receive(const MyMessage &message)
           gTurnOffDependentsCounter = DEBUG_STATS+2; // TODO: temporary
         #endif
       } else if (debugCommand == 2) { // dump relays state
-        for (size_t relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
+        for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
           Serial.println(gRelayService.toString(relayNum));
         }
       } else if (debugCommand == 3) { // dump buttons state
-        for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++) {
+        for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
           Serial.println(String("# Button ") + buttonNum + ": " + gButtonService.toString(buttonNum));
         }
       } else if (debugCommand == 4) { // dump EEPROM
@@ -299,7 +299,7 @@ void receive(const MyMessage &message)
         resetFunc();
       } else if (debugCommand == 7) { // check relays state & eeprom
         // debug feature
-        for (size_t relayNum = 0; relayNum < gRelayConfigRef.size(); relayNum++) {
+        for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
           if ((gConfiguration.getRelayPin(relayNum) >= 0) &&
               (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gConfiguration.getRelayPin(relayNum)) ==
                                                     (gConfiguration.getRelayOptions(relayNum) & RELAY_TRIGGER_HIGH))))
@@ -332,8 +332,8 @@ using namespace lkankowski;
 #include <Configuration.h>
 #include "config.h"
 
-Vector<const RelayConfigDef> gRelayConfigRef(gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
-Vector<const ButtonConfigDef> gButtonConfigRef(gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef));
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 // Eeprom gEeprom;

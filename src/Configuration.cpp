@@ -4,15 +4,15 @@
 using namespace lkankowski;
 
 
-Configuration::Configuration(const Vector<const RelayConfigDef> & relayConfig,
-                             const Vector<const ButtonConfigDef> & buttonConfig)
+Configuration::Configuration(const RelayConfigRef & relayConfig,
+                             const ButtonConfigRef & buttonConfig)
   : _relayConfig(relayConfig)
   , _buttonConfig(buttonConfig)
 {
-  _relaySensorId = new uint8_t[_relayConfig.size()];
-  _relayOptions = new uint8_t[_relayConfig.size()];
+  _relaySensorId = new uint8_t[_relayConfig.size];
+  _relayOptions = new uint8_t[_relayConfig.size];
 
-  for (size_t relayNum = 0; relayNum < _relayConfig.size(); relayNum++) {
+  for (size_t relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
     loadRelayConfigFromPROGMEM(relayNum);
     _relaySensorId[relayNum] = _relayConfigEntryBuf.sensorId;
     _relayOptions[relayNum] = _relayConfigEntryBuf.relayOptions;
@@ -70,7 +70,7 @@ Configuration::~Configuration()
 int Configuration::getRelayNum(int sensorId) const
 {  
   if (sensorId > -1) {
-    for (size_t relayNum = 0; relayNum < _relayConfig.size(); relayNum++) {
+    for (size_t relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
       if (_relaySensorId[relayNum] == sensorId) return(relayNum);
     }
   }
@@ -143,14 +143,14 @@ int Configuration::getButtonDoubleClickAction(size_t buttonNum)
 
 void Configuration::loadRelayConfigFromPROGMEM(size_t relayNum) 
 {
-  PROGMEM_readAnything(&_relayConfig[relayNum], _relayConfigEntryBuf);
+  PROGMEM_readAnything(&_relayConfig.cfg[relayNum], _relayConfigEntryBuf);
   _relayNumInBuf = relayNum;
 };
 
 
 void Configuration::loadButtonConfigFromPROGMEM(size_t buttonNum) 
 {
-  PROGMEM_readAnything(&_buttonConfig[buttonNum], _buttonConfigEntryBuf);
+  PROGMEM_readAnything(&_buttonConfig.cfg[buttonNum], _buttonConfigEntryBuf);
   _buttonNumInBuf = buttonNum;
 };
 

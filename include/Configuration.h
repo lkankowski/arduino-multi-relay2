@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <Vector.h>
+#include <stddef.h>
 
 namespace lkankowski {
 
@@ -30,6 +30,11 @@ struct RelayConfigDef {
   char relayDescription[25];
 };
 
+struct RelayConfigRef {
+  const RelayConfigDef * cfg;
+  size_t size;
+};
+
 
 struct ButtonConfigDef {
   int buttonPin;
@@ -40,21 +45,27 @@ struct ButtonConfigDef {
   char buttonDescription[25];
 };
 
+struct ButtonConfigRef {
+  const ButtonConfigDef * cfg;
+  size_t size;
+};
+
+
 class Configuration
 {
   public:
-    Configuration(const Vector<const RelayConfigDef> &, const Vector<const ButtonConfigDef> &);
+    Configuration(const RelayConfigRef &, const ButtonConfigRef &);
     ~Configuration();
 
     int getRelayNum(int) const;
-    size_t getRelaysCount() const { return _relayConfig.size(); };
+    size_t getRelaysCount() const { return _relayConfig.size; };
     int getRelayPin(size_t relayNum);
     uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
     uint8_t getRelayDependsOn(size_t relayNum);
     int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
     const char * getRelayDescription(size_t relayNum);
 
-    size_t getButtonsCount() const { return _buttonConfig.size(); };
+    size_t getButtonsCount() const { return _buttonConfig.size; };
     ButtonType getButtonType(size_t buttonNum);
     int getButtonPin(size_t buttonNum);
     const char * getButtonDescription(size_t buttonNum);
@@ -66,14 +77,14 @@ class Configuration
     void loadRelayConfigFromPROGMEM(size_t);
     void loadButtonConfigFromPROGMEM(size_t);
 
-    const Vector<const RelayConfigDef> & _relayConfig;
+    const RelayConfigRef & _relayConfig;
     RelayConfigDef _relayConfigEntryBuf;
     size_t _relayNumInBuf = -1;
 
     uint8_t * _relaySensorId;
     uint8_t * _relayOptions;
 
-    const Vector<const ButtonConfigDef> & _buttonConfig;
+    const ButtonConfigRef & _buttonConfig;
     ButtonConfigDef _buttonConfigEntryBuf;
     size_t _buttonNumInBuf = -1;
 };
