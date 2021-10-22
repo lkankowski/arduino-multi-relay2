@@ -1,8 +1,8 @@
 #pragma once
 
-#include <Vector.h>
+#include <ButtonCallbackInterface.h>
+#include <RelayStateNotification.h>
 #include <Relay.h>
-#include <RelayCallback.h>
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
 #include <Configuration.h>
@@ -14,14 +14,15 @@ const uint8_t RELAY_STARTUP_MASK = RELAY_STARTUP_ON | RELAY_STARTUP_OFF;
 
 #define RELAY_STATE_STORAGE 1
 
-class RelayService {
-
+class RelayService : public ButtonCallbackInterface
+{
   public:
-    RelayService(Configuration &, EepromInterface &, Vector<RelayCallback> &);
+    RelayService(Configuration &, EepromInterface &, RelayStateNotification &);
     ~RelayService();
 
     void initialize(bool);
-    bool changeState(int, bool, unsigned long);
+    bool changeRelayState(int, bool, unsigned long) override;
+    bool toogleRelayState(int, unsigned long) override;
     bool getState(int);
     bool impulseProcess(int, unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
@@ -38,7 +39,8 @@ class RelayService {
     PinInterface ** _pin;
     Configuration & _configuration;
     bool * _storeRelayToEEPROM;
-    EepromInterface& _eeprom;
+    EepromInterface & _eeprom;
+    RelayStateNotification & _relayStateNotification;
     int _impulsePending;
     unsigned long _impulseInterval;
     bool * _relayIsImpulse;

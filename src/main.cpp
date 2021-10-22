@@ -4,8 +4,8 @@
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>
 #include <RelayService.h>
-#include <RelayCallback.h>
 #include <ButtonService.h>
+#include <MySensorsWrapper.h>
 #define MY_GATEWAY_SERIAL
 #include <MySensors.h>
 
@@ -47,11 +47,9 @@ Vector<const ButtonConfigDef> gButtonConfigRef(gButtonConfig, sizeof(gButtonConf
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
-RelayCallback gRelaysForCallback[sizeof(gRelayConfig) / sizeof(RelayConfigDef)];
-Vector<RelayCallback> gRelaysForCallbackRef(gRelaysForCallback, sizeof(gRelayConfig) / sizeof(RelayConfigDef));
-
-RelayService gRelayService(gConfiguration, gEeprom, gRelaysForCallbackRef);
-ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL);
+MySensorsWrapper gMySensorsWrapper;
+RelayService gRelayService(gConfiguration, gEeprom, gMySensorsWrapper);
+ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL, gRelayService);
 
 FILE serial_stdout;
 void(* resetFunc) (void) = 0; //declare reset function at address 0
@@ -141,16 +139,16 @@ void before()
   for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++)
   {
     int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
-    gButtonService.setAction(buttonNum,
-                             gRelaysForCallback[clickActionRelayNum],
-                             gRelaysForCallback[gConfiguration.getButtonLongClickAction(buttonNum)],
-                             gRelaysForCallback[gConfiguration.getButtonDoubleClickAction(buttonNum)]);
+    // gButtonService.setAction(buttonNum,
+    //                          clickActionRelayNum,
+    //                          gConfiguration.getButtonLongClickAction(buttonNum),
+    //                          gConfiguration.getButtonDoubleClickAction(buttonNum));
     gButtonService.attachPin(buttonNum);
     if (((gButtonConfig[buttonNum].buttonType & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
+      gRelayService.changeRelayState(clickActionRelayNum, gButtonService.getRelayState(buttonNum), millis());
     } else if (((gButtonConfig[buttonNum].buttonType & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
+      gRelayService.changeRelayState(clickActionRelayNum, gButtonService.getRelayState(buttonNum), millis());
     }
   }
 
@@ -193,26 +191,28 @@ void loop()
     }
   }
 
-  for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++) {
-    
-    int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
-    if (relayNum > -1) {
-      // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
-      bool relayState = gButtonService.getRelayState(buttonNum, gRelayService.getState(relayNum));
+  gButtonService.checkEventsAndDoActions(loopStartMillis);
 
-      #ifdef IGNORE_BUTTONS_START_MS
-        if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
-      #endif
-          if (gRelayService.changeState(relayNum, relayState, loopStartMillis)) {
-            myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-            myMessage.setSensor(gRelayService.getSensorId(relayNum));
-            send(myMessage.set(relayState));
-          }
-      #ifdef IGNORE_BUTTONS_START_MS
-        }
-      #endif
-    }
-  }
+  // for (size_t buttonNum = 0; buttonNum < gButtonConfigRef.size(); buttonNum++) {
+    
+  //   int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
+  //   if (relayNum > -1) {
+  //     // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
+  //     bool relayState = gButtonService.getRelayState(buttonNum, gRelayService.getState(relayNum));
+
+  //     #ifdef IGNORE_BUTTONS_START_MS
+  //       if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
+  //     #endif
+  //         if (gRelayService.changeRelayState(relayNum, relayState, loopStartMillis)) {
+  //           myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
+  //           myMessage.setSensor(gRelayService.getSensorId(relayNum));
+  //           send(myMessage.set(relayState));
+  //         }
+  //     #ifdef IGNORE_BUTTONS_START_MS
+  //       }
+  //     #endif
+  //   }
+  // }
 
   #ifdef DEBUG_STATS
     if (debugStatsOn) {
@@ -266,7 +266,7 @@ void receive(const MyMessage &message)
     if (message.getType() == V_STATUS) {
       int relayNum = gConfiguration.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
-      gRelayService.changeState(relayNum, message.getBool(), millis());
+      gRelayService.changeRelayState(relayNum, message.getBool(), millis());
       if (! message.getRequestEcho()) {
         myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
         myMessage.setSensor(message.getSensor());

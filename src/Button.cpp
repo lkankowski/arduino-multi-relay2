@@ -11,8 +11,9 @@ bool MonoStableButton::_clickTriggerWhenPressed = true;
 ButtonInterface * ButtonInterface::create(ButtonType type,
                                           int pin,
                                           unsigned int debounceInterval,
-                                          bool hasLongClick,
-                                          bool hasDoubleClick)
+                                          int clickActionId,
+                                          int longClickActionId,
+                                          int doubleClickActionId)
 {
   HardwareSwitchInterface * switchHW =
     HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
@@ -22,10 +23,10 @@ ButtonInterface * ButtonInterface::create(ButtonType type,
 
   switch(type & 0x0f)
   {
-    case MONO_STABLE: return new MonoStableButton(switchHW, hasLongClick, hasDoubleClick);
-    case BI_STABLE:   return new BiStableButton(switchHW, hasDoubleClick);
-    case DING_DONG:   return new DingDongButton(switchHW);
-    case REED_SWITCH: return new ReedSwitch(switchHW);
+    case MONO_STABLE: return new MonoStableButton(switchHW, clickActionId, longClickActionId, doubleClickActionId);
+    case BI_STABLE:   return new BiStableButton(switchHW, clickActionId, doubleClickActionId);
+    case DING_DONG:   return new DingDongButton(switchHW, clickActionId);
+    case REED_SWITCH: return new ReedSwitch(switchHW, clickActionId);
   }
   delete switchHW;
   return nullptr;
@@ -36,6 +37,7 @@ ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW)
     : _switch(switchHW)
     , _eventState(BTN_STATE_INITIAL)
     , _startStateMillis(0)
+    , _clickActionId(-1)
 {};
 
 
@@ -46,28 +48,39 @@ ButtonInterface::~ButtonInterface()
 
 
 MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW,
-                                   bool hasLongClick,
-                                   bool hasDoubleClick)
+                                   int clickActionId,
+                                   int longClickActionId,
+                                   int doubleClickActionId)
   : ButtonInterface(switchHW)
-  , _hasLongClick(hasLongClick)
-  , _hasDoubleClick(hasDoubleClick)
-{};
+  , _longClickActionId(longClickActionId)
+  , _doubleClickActionId(doubleClickActionId)
+{
+  _clickActionId = clickActionId;
+};
 
 
-BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW, bool hasDoubleClick)
+BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW,
+                               int clickActionId,
+                               int doubleClickActionId)
   : ButtonInterface(switchHW)
-  , _hasDoubleClick(hasDoubleClick)
-{};
+  , _doubleClickActionId(doubleClickActionId)
+{
+  _clickActionId = clickActionId;
+};
 
 
-DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW)
+DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW, int clickActionId)
   : ButtonInterface(switchHW)
-{};
+{
+  _clickActionId = clickActionId;
+};
 
 
-ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW)
+ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW, int clickActionId)
   : ButtonInterface(switchHW)
-{};
+{
+  _clickActionId = clickActionId;
+};
 
 
 void ButtonInterface::attachPin()
@@ -91,81 +104,71 @@ void MonoStableButton::clickTriggerWhenPressed(bool clickTriggerWhenPressed)
 };
 
 
-ButtonEvent MonoStableButton::checkEvent(unsigned long millis)
+int MonoStableButton::checkEvent(unsigned long millis)
 {
   bool switchStateChanged = _switch->update(millis);
   int buttonAction = calculateEvent(switchStateChanged, millis);
 
-  #ifdef DEBUG_ACTION
-    if (buttonAction & BUTTON_CLICK) {
-        printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
-    } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
-        printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
-    } else if (buttonAction & BUTTON_LONG_PRESS) {
-        printf_P(PSTR("%s - LongPress for relay %i"), _description, relayNum);
-    }
-  #endif
-  return (ButtonEvent) (buttonAction & BUTTON_ACTION_MASK);
+  int relayNum = -1;
+  if (buttonAction & BUTTON_CLICK) {
+    relayNum = _clickActionId;
+    #ifdef DEBUG_ACTION
+      printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
+    #endif
+  } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
+    relayNum = _doubleClickActionId;
+    #ifdef DEBUG_ACTION
+      printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
+    #endif
+  } else if (buttonAction & BUTTON_LONG_PRESS) {
+    relayNum = _longClickActionId;
+    #ifdef DEBUG_ACTION
+      printf_P(PSTR("%s - LongPress for relay %i"), _description, relayNum);
+    #endif
+  }
+  return relayNum;
 };
 
 
-ButtonEvent BiStableButton::checkEvent(unsigned long millis)
+int BiStableButton::checkEvent(unsigned long millis)
 {
   bool switchStateChanged = _switch->update(millis);
   int buttonAction = calculateEvent(switchStateChanged, millis);
 
-  #ifdef DEBUG_ACTION
-    if (buttonAction & BUTTON_CLICK) {
-        Serial.println(String(_description) + " - Click for relay " + relayNum);
-    } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
-        Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
-    }
-  #endif
-  return (ButtonEvent) (buttonAction & BUTTON_ACTION_MASK);
+  int relayNum = -1;
+  if (buttonAction & BUTTON_CLICK) {
+    relayNum = _clickActionId;
+    #ifdef DEBUG_ACTION
+      printf_P(PSTR("%s - Click for relay %i\n"), _description, relayNum);
+    #endif
+  } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
+    relayNum = _doubleClickActionId;
+    #ifdef DEBUG_ACTION
+      printf_P(PSTR("%s - DoubleClick for relay %i"), _description, relayNum);
+    #endif
+  }
+
+  return relayNum;
 };
 
 
 
 
-ButtonEvent DingDongButton::checkEvent(unsigned long millis)
+int DingDongButton::checkEvent(unsigned long millis)
 {
   if (_switch->update(millis)) {
-    return BUTTON_CLICK;
+    return _clickActionId;
   }
-  return BUTTON_NO_EVENT;
+  return -1;
 };
 
 
-ButtonEvent ReedSwitch::checkEvent(unsigned long millis)
+int ReedSwitch::checkEvent(unsigned long millis)
 {
   if (_switch->update(millis)) {
-    return BUTTON_CLICK;
+    return _clickActionId;
   }
-  return BUTTON_NO_EVENT;
-};
-
-
-bool MonoStableButton::getRelayState(bool relayState)
-{
-  return ! relayState;
-};
-
-
-bool BiStableButton::getRelayState(bool relayState)
-{
-  return ! relayState;
-};
-
-
-bool DingDongButton::getRelayState(bool relayState)
-{
-  return _switch->getState();
-};
-
-
-bool ReedSwitch::getRelayState(bool relayState)
-{
-  return ! _switch->getState();
+  return -1;
 };
 
 
@@ -173,6 +176,9 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
 {
   int result = BUTTON_NO_EVENT;
   bool currentState = _switch->getState();
+
+  bool hasLongClick = _longClickActionId != -1;
+  bool hasDoubleClick = _doubleClickActionId != -1;
 
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
     if (currentState) { //changed from switchStateChanged
@@ -182,17 +188,17 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
     }
   } else if (_eventState == BTN_STATE_1ST_PRESS) { // waiting for 1st release
     if (!currentState) { //released
-      if (!_hasDoubleClick) {
+      if (!hasDoubleClick) {
         result = BUTTON_CLICK;
         _eventState = BTN_STATE_INITIAL;
       } else {
         _eventState = BTN_STATE_1ST_RELEASE;
       }
     } else { // still pressed
-      if ((!_hasDoubleClick) && (!_hasLongClick) && (currentState == _clickTriggerWhenPressed)) { // no long/double-click action, do click
+      if ((!hasDoubleClick) && (!hasLongClick) && (currentState == _clickTriggerWhenPressed)) { // no long/double-click action, do click
         result = BUTTON_CLICK | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
-      } else if (_hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
+      } else if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
         result = BUTTON_LONG_PRESS | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
       } else {
@@ -235,6 +241,8 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
 {
   int result = BUTTON_NO_EVENT;
 
+  bool hasDoubleClick = _doubleClickActionId != -1;
+
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
     if (switchStateChanged) {
       _startStateMillis = now;
@@ -244,7 +252,7 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
   // BI_STABLE buttons only state
   } else if (_eventState == BTN_STATE_1ST_CHANGE_BI) { // waiting for next change
     // waiting for second change or timeout
-    if (!_hasDoubleClick || ((now - _startStateMillis) > _doubleclickInterval)) {
+    if (!hasDoubleClick || ((now - _startStateMillis) > _doubleclickInterval)) {
       // this was only a single short click
       result = BUTTON_CLICK;
       _eventState = BTN_STATE_INITIAL;
