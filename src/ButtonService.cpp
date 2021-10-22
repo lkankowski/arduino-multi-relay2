@@ -3,23 +3,22 @@
 using namespace lkankowski;
 
 
-ButtonService::ButtonService(const ButtonConfigRef & buttonConfig, unsigned int debounceInterval)
-  : _buttonConfig(buttonConfig)
+ButtonService::ButtonService(Configuration & configuration, unsigned int debounceInterval)
+  : _configuration(configuration)
 {
-  _button = new ButtonInterface*[_buttonConfig.size];
-  for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+  _button = new ButtonInterface*[_configuration.getButtonsCount()];
+  for (size_t buttonNum = 0; buttonNum < _configuration.getButtonsCount(); buttonNum++)
   {
-    _button[buttonNum] = ButtonInterface::create(_buttonConfig.config[buttonNum].buttonType,
-                                                 _buttonConfig.config[buttonNum].buttonPin,
-                                                 debounceInterval,
-                                                 _buttonConfig.config[buttonNum].buttonDescription);
+    _button[buttonNum] = ButtonInterface::create(_configuration.getButtonType(buttonNum),
+                                                 _configuration.getButtonPin(buttonNum),
+                                                 debounceInterval);
   }
 };
 
 
 ButtonService::~ButtonService()
 {
-  for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+  for (size_t buttonNum = 0; buttonNum < _configuration.getButtonsCount(); buttonNum++)
   {
     delete _button[buttonNum];
   }
@@ -29,7 +28,7 @@ ButtonService::~ButtonService()
 
 // void ButtonService::setup()
 // {
-//   for (int buttonNum = 0; buttonNum < _buttonConfig.size; buttonNum++)
+//   for (size_t buttonNum = 0; buttonNum < _configuration.getButtonsCount(); buttonNum++)
 //   {
 //     gButtonService.setAction(buttonNum,
 //                             gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId),
@@ -65,5 +64,5 @@ bool ButtonService::getRelayState(int buttonNum, bool relayState)
 
 String ButtonService::toString(int buttonNum)
 {
-  return _button[buttonNum]->toString();
+  return String("state=") + _button[buttonNum]->getState() + "; " + _configuration.getButtonDescription(buttonNum);
 };

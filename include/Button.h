@@ -1,17 +1,10 @@
 #pragma once
 
 #include <Switch.h>
+#include <Configuration.h>
+
 
 namespace lkankowski {
-
-enum ButtonType {
-  MONO_STABLE = 0,
-  BI_STABLE = 1,
-  DING_DONG = 2, // HIGH state immediatly after push, LOW state after release
-  REED_SWITCH = 3, // magnetic sensor for door or window, LOW - closed, HIGH - opened
-  PRESSED_STATE_HIGH = 0x10
-};
-
 
 class ButtonInterface
 {
@@ -23,13 +16,13 @@ class ButtonInterface
 
     void setAction(int, int, int);
     void attachPin();
-    String toString();
+    bool getState() const { return _switch->getState(); };
 
     static void setEventIntervals(unsigned long, unsigned long);
-    static ButtonInterface * create(ButtonType, int, unsigned int, const char * const);
+    static ButtonInterface * create(ButtonType, int, unsigned int);
 
   protected:
-    ButtonInterface(HardwareSwitchInterface *, const char * const);
+    ButtonInterface(HardwareSwitchInterface *);
     virtual int calculateEvent(bool, unsigned long) = 0;
 
     enum ButtonState {
@@ -53,7 +46,6 @@ class ButtonInterface
     };
 
     HardwareSwitchInterface * _switch;
-    const char * const _description;
     int _clickRelayNum;
     int _longclickRelayNum;
     int _doubleclickRelayNum;
@@ -76,7 +68,7 @@ class MonoStableButton : public ButtonInterface
     static void clickTriggerWhenPressed(bool);
 
   protected:
-    MonoStableButton(HardwareSwitchInterface *, const char * const);
+    MonoStableButton(HardwareSwitchInterface *);
     int calculateEvent(bool, unsigned long) override;
 
     static bool _clickTriggerWhenPressed;
@@ -92,7 +84,7 @@ class BiStableButton : public ButtonInterface
     bool getRelayState(bool) override;
 
   protected:
-    BiStableButton(HardwareSwitchInterface *, const char * const);
+    BiStableButton(HardwareSwitchInterface *);
     int calculateEvent(bool, unsigned long) override;
 };
 
@@ -106,7 +98,7 @@ class DingDongButton : public ButtonInterface
     bool getRelayState(bool) override;
 
   protected:
-    DingDongButton(HardwareSwitchInterface *, const char * const);
+    DingDongButton(HardwareSwitchInterface *);
     int calculateEvent(bool, unsigned long) override;
 };
 
@@ -120,7 +112,7 @@ class ReedSwitch : public ButtonInterface
     bool getRelayState(bool) override;
 
   protected:
-    ReedSwitch(HardwareSwitchInterface *, const char * const);
+    ReedSwitch(HardwareSwitchInterface *);
     int calculateEvent(bool, unsigned long) override;
 };
 

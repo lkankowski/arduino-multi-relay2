@@ -1,28 +1,14 @@
 #pragma once
 
 #include <Button.h>
+#include <Configuration.h>
 
 namespace lkankowski {
-
-typedef struct {
-  int buttonPin;
-  ButtonType buttonType;
-  int clickRelayId;
-  int longClickRelayId;
-  int doubleClickRelayId;
-  const char * const buttonDescription;
-} ButtonConfigDef;
-
-typedef struct {
-  const ButtonConfigDef * config;
-  int size;
-} ButtonConfigRef;
-
 
 class ButtonService
 {
   public:
-    ButtonService(const ButtonConfigRef &, unsigned int);
+    ButtonService(Configuration &, unsigned int);
     ~ButtonService();
 
     // void setup(); 
@@ -33,7 +19,7 @@ class ButtonService
     String toString(int);
 
   private:
-    const ButtonConfigRef & _buttonConfig;
+    Configuration & _configuration;
     ButtonInterface ** _button;  //TODO: check shared_ptr
 };
 

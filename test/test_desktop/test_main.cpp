@@ -1,5 +1,6 @@
 #include <ArduinoAbstract.h>
 
+#include <Configuration.h>
 #include <Relay.h>
 #include <RelayService.h>
 #include <Button.h>
@@ -17,10 +18,14 @@ using namespace lkankowski;
 
 #include <config.h>
 
-const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
+
+//const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 
 Eeprom gEeprom;
-RelayService gRelayService(gRelayConfigRef, gEeprom);
+RelayService gRelayService(gConfiguration, gEeprom);
 
 
 void setUp(void)
@@ -31,10 +36,9 @@ void setUp(void)
 
 void test_config_relays()
 {
-  const int numberOfRelays = sizeof(gRelayConfig) / sizeof(RelayConfigDef);
   // check if relay ID is unique
-  for (int relayNum = 0; relayNum < numberOfRelays-1; relayNum++) {
-    for(int secondRelayNum = relayNum+1; secondRelayNum < numberOfRelays; secondRelayNum++) {
+  for (int relayNum = 0; relayNum < gConfiguration.getRelaysCount()-1; relayNum++) {
+    for(int secondRelayNum = relayNum+1; secondRelayNum < gConfiguration.getRelaysCount(); secondRelayNum++) {
 //      Serial.println(string(gRelayConfig[relayNum].sensorId) + "==" + gRelayConfig[secondRelayNum].sensorId);
       TEST_ASSERT_NOT_EQUAL_MESSAGE(gRelayConfig[relayNum].sensorId,
                                     gRelayConfig[secondRelayNum].sensorId,
@@ -43,7 +47,7 @@ void test_config_relays()
   }
   // validate if pin is correct to the current board
   #if defined(BOARD_TARGET_ATMEGA2560)
-    for (int relayNum = 0; relayNum < numberOfRelays; relayNum++) {
+    for (int relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin >= 0) { // exclude virtual relays
         if (pin & 0xff00) { //exclude expander pins
@@ -77,21 +81,19 @@ void test_config_relays()
 
 void test_config_buttons()
 {
-  const int numberOfButtons = sizeof(gButtonConfig) / sizeof(ButtonConfigDef);
-
-  for (int buttonNum = 0; buttonNum < numberOfButtons; buttonNum++) {
+  for (int buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
     int pin = gButtonConfig[buttonNum].buttonPin;
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
-    TEST_ASSERT_GREATER_OR_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
+    TEST_ASSERT_GREATER_OR_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     if (gButtonConfig[buttonNum].clickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].clickRelayId));
     }
     if (gButtonConfig[buttonNum].longClickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].longClickRelayId));
     }
     if (gButtonConfig[buttonNum].doubleClickRelayId > -1) {
-      TEST_ASSERT_NOT_EQUAL(-1, gRelayService.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
+      TEST_ASSERT_NOT_EQUAL(-1, gConfiguration.getRelayNum(gButtonConfig[buttonNum].doubleClickRelayId));
     }
 
     TEST_ASSERT_GREATER_OR_EQUAL_MESSAGE(0,
@@ -132,14 +134,15 @@ void test_relayservice()
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
   };
-  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
-  
-  RelayService relayService(relayConfigRef, gEeprom);
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  Configuration configuration(relayConfigRef, gButtonConfigRef);
+
+  RelayService relayService(configuration, gEeprom);
   relayService.initialize(true); // reset eeprom
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(0, relayService.getRelayNum(0), "[1] Lamp 1 should be 0");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, relayService.getRelayNum(5), "[1] Lamp 2 should be 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, relayService.getRelayNum(3), "[1] Lamp 3 should be 2");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, configuration.getRelayNum(0), "[1] Lamp 1 should be 0");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, configuration.getRelayNum(5), "[1] Lamp 2 should be 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, configuration.getRelayNum(3), "[1] Lamp 3 should be 2");
   
   TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[4], "[2] Lamp 4 should have pin state LOW when turned OFF");
@@ -159,9 +162,10 @@ void test_relay_startup_eeprom()
     {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW | RELAY_IMPULSE, -1, "Lamp 4"},
   };
-  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  Configuration configuration(relayConfigRef, gButtonConfigRef);
   
-  RelayService relayService(relayConfigRef, gEeprom);
+  RelayService relayService(configuration, gEeprom);
   relayService.initialize(true); // reset eeprom
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be ON");
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "[1] Lamp 2 should be OFF");
@@ -179,7 +183,7 @@ void test_relay_startup_eeprom()
 
   long dummy = -1L;
 
-  RelayService relayService2(relayConfigRef, gEeprom);
+  RelayService relayService2(configuration, gEeprom);
   relayService2.initialize(false); // do not reset eeprom
   TEST_ASSERT_TRUE_MESSAGE(relayService2.getState(0), "[3] Lamp 1 should be ON");
   TEST_ASSERT_FALSE_MESSAGE(relayService2.getState(1), "[3] Lamp 2 should be OFF");
@@ -193,9 +197,10 @@ void test_relay_impulse()
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
-  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  Configuration configuration(relayConfigRef, gButtonConfigRef);
   
-  RelayService relayService(relayConfigRef, gEeprom);
+  RelayService relayService(configuration, gEeprom);
   relayService.setImpulseInterval(250);
   relayService.initialize(true); // reset eeprom
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be OFF");
@@ -222,9 +227,10 @@ void test_relay_dependsOn()
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
     {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
   };
-  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  Configuration configuration(relayConfigRef, gButtonConfigRef);
 
-  RelayService relayService(relayConfigRef, gEeprom);
+  RelayService relayService(configuration, gEeprom);
   relayService.initialize(true);
   relayService.changeState(1, true, 0);
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "Lamp 2 should be ON");
@@ -365,7 +371,7 @@ void test_switch_high()
 void test_button_mono_only_click_when_pressed()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 1");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
   MonoStableButton::clickTriggerWhenPressed(true);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
@@ -394,7 +400,7 @@ void test_button_mono_only_click_when_pressed()
 void test_button_mono_only_click_when_released()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 2");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
   MonoStableButton::clickTriggerWhenPressed(false);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
@@ -416,7 +422,7 @@ void test_button_mono_only_click_when_released()
 void test_button_mono_all()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 3");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
   MonoStableButton::clickTriggerWhenPressed(true);
   button->setAction(1, 2, 3);
   pin.digitalWrite(HIGH);
@@ -469,7 +475,7 @@ void test_button_mono_all()
 void test_button_bi_only()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, "Button 4");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
   button->attachPin();
@@ -489,7 +495,7 @@ void test_button_bi_only()
 void test_button_bi_all()
 {
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, "Button 5");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50);
   button->setAction(1, -1, 2);
   pin.digitalWrite(HIGH);
   button->attachPin();
@@ -519,7 +525,7 @@ void test_button_ding_dong_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(DING_DONG, 1, 50, "Button 6");
+  ButtonInterface * button = ButtonInterface::create(DING_DONG, 1, 50);
   button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH); // initially same state as MONO
   button->attachPin();
@@ -546,7 +552,7 @@ void test_button_reed_switch_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, 1, 50, "Button 7");
+  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, 1, 50);
   button->setAction(1, -1, -1);
   pin.digitalWrite(LOW); // initially LOW - window closed
   button->attachPin();
@@ -573,7 +579,7 @@ void test_button_reed_switch_only()
 void test_button_to_relay_state()
 {
   FakePin pin(1);
-  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, 1, 50, "Button 8");
+  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, 1, 50);
   buttonMono->attachPin();
 
   TEST_ASSERT_FALSE_MESSAGE(buttonMono->getRelayState(true), "[1] getRelayState MONO");
@@ -581,7 +587,7 @@ void test_button_to_relay_state()
 
   delete buttonMono;
 
-  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, 1, 50, "Button 9");
+  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, 1, 50);
   buttonBi->attachPin();
 
   TEST_ASSERT_FALSE_MESSAGE(buttonBi->getRelayState(true), "[3] getRelayState BI");
@@ -590,7 +596,7 @@ void test_button_to_relay_state()
   delete buttonBi;
 
   pin.digitalWrite(HIGH); // pullup - OFF
-  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50, "Button 10");
+  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50);
   buttonDingDong->attachPin();
 
   buttonDingDong->checkEvent(0);
@@ -608,7 +614,7 @@ void test_button_to_relay_state()
   delete buttonDingDong;
 
   pin.digitalWrite(LOW); // CLOSED
-  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50, "Button 11");
+  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50);
   buttonReedSwitch->attachPin();
 
   buttonReedSwitch->checkEvent(600);
