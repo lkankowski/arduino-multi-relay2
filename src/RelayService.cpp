@@ -3,9 +3,10 @@
 using namespace lkankowski;
 
 
-RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom, Vector<RelayCallback> & relayCallback)
+RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom, RelayStateNotification & relayStateNotification)
   : _configuration(configuration)
   , _eeprom(eeprom)
+  , _relayStateNotification(relayStateNotification)
   , _impulsePending(0)
   , _impulseInterval(250)
   , _isAnyDependentOn(false)
@@ -15,9 +16,7 @@ RelayService::RelayService(Configuration & configuration, EepromInterface & eepr
   for (size_t relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
     _pin[relayNum] = PinCreator::instance()->create(_configuration.getRelayPin(relayNum));
     _relays[relayNum] = new Relay(_pin[relayNum]);
-    relayCallback[relayNum].setRelayNum(relayNum);
   }
-  RelayCallback::setRelayServiceInstance(this);
   _storeRelayToEEPROM = new bool[_configuration.getRelaysCount()];
   _relayIsImpulse = new bool[_configuration.getRelaysCount()];
   _relayImpulseStartMillis = new unsigned long[_configuration.getRelaysCount()];
@@ -85,10 +84,10 @@ void RelayService::initialize(bool resetEepromState)
 };
 
 
-bool RelayService::changeState(int relayNum, bool relayState, unsigned long millis)
+bool RelayService::changeRelayState(int relayNum, bool relayState, unsigned long millis)
 {
   if (relayState && (_relayDependsOn[relayNum] != -1)) {
-    changeState(_relayDependsOn[relayNum], true, millis);
+    changeRelayState(_relayDependsOn[relayNum], true, millis);
     _isAnyDependentOn = true;
   }
   #ifdef DEBUG_STARTUP
@@ -112,7 +111,18 @@ bool RelayService::changeState(int relayNum, bool relayState, unsigned long mill
     }
   }
 
+  if (stateHasChanged) {
+    _relayStateNotification.notify(_configuration.getRelaySensorId(relayNum),
+                                   relayState,
+                                   _reportAsSensor[relayNum]);
+  }
   return stateHasChanged;
+};
+
+
+bool RelayService::toogleRelayState(int relayNum, unsigned long millis)
+{
+  return changeRelayState(relayNum, getState(relayNum), millis);
 };
 
 
@@ -122,7 +132,7 @@ bool RelayService::impulseProcess(int relayNum, unsigned long millis)
 
     // the "|| (millis < myRelayImpulseStart[i])" is for "millis()" overflow protection
     if ((millis > _relayImpulseStartMillis[relayNum]+_impulseInterval) || (millis < _relayImpulseStartMillis[relayNum])) {
-      return changeState(relayNum, false, millis);
+      return changeRelayState(relayNum, false, millis);
     }
   }
   return(false);
@@ -143,7 +153,7 @@ bool RelayService::turnOffDependent(unsigned long millis)
           }
         }
         if (allMasterTurnedOff) {
-          changeState(relayNum, false, millis);
+          changeRelayState(relayNum, false, millis);
         } else {
           _isAnyDependentOn = true;
         }

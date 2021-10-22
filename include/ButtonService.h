@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Button.h>
-#include <RelayCallbackInterface.h>
+#include <ButtonCallbackInterface.h>
 #include <Configuration.h>
 
 namespace lkankowski {
@@ -9,19 +9,21 @@ namespace lkankowski {
 class ButtonService
 {
   public:
-    ButtonService(Configuration &, unsigned int);
+    ButtonService(Configuration &, unsigned int, ButtonCallbackInterface & buttonCallback);
     ~ButtonService();
 
     // void setup(); 
-    void setAction(size_t, RelayCallbackInterface &, RelayCallbackInterface &, RelayCallbackInterface &); 
+    // void setAction(size_t, int, int, int); 
     void attachPin(size_t);
-    int checkEvent(size_t, unsigned long);
-    bool getRelayState(size_t, bool);
+    void checkEventsAndDoActions(unsigned long);
+    // int checkEvent(int, unsigned long);
+    bool getRelayState(size_t);
     void printDebug(size_t);
 
   private:
     Configuration & _configuration;
     ButtonInterface ** _button;  //TODO: check shared_ptr
+    ButtonCallbackInterface & _buttonCallback;
 };
 
 } //namespace
