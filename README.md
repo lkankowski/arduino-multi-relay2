@@ -11,14 +11,15 @@ Copy file "config.h.sample" into "config.h". There is sample configuration you n
 
 ## Build
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
-By default sketch is build for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
+By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
+Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
 
 # Configuration
 
 ## Main config file "config.h"
 ```
 const RelayConfigDef gRelayConfig[] = {
-  {sensor id, relay pin, relay options, relay description}
+  {sensor id, relay pin, relay options, relay dependOn, relay description}
 };
 ```
 Params description:
@@ -28,7 +29,8 @@ Params description:
   * RELAY_TRIGGER_LOW or RELAY_TRIGGER_HIGH - required, trigger level
   * RELAY_STARTUP_ON or RELAY_STARTUP_OFF - optional, startup state
   * RELAY_IMPULSE - optional, relay is turned on only for short period of time (defined in constant RELAY_IMPULSE_INTERVAL, 250ms by default), ignored for DING_DONG and REED_SWITCH buttons
-* relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, can be empty ("")
+* relay dependOn - ID of relay that needs to be turned on before this one
+* relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, max. 25 chars, can be empty ("")
 
 ```
 const ButtonConfigDef gButtonConfig[] = {
@@ -43,9 +45,9 @@ Params description:
   * DING_DONG - doorbell button, relay is triggered only when button is pushed
   * REED_SWITCH - door/window sensor, oposite to DING_DONG - state OFF when door/window is closed, ON when opened. All relays with at least one REED_SWITCH are reported throught MySensors as S_DOOR sensor.
 * click relay id - sensor id used in relay configuration
-* long-click relay id - sensor id used in relay configuration, -1 when not used
-* double-click relay id - sensor id used in relay configuration, -1 when not used
-* button description - debug only information
+* long-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
+* double-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
+* button description - debug only information, max. 25 chars, can be empty ("")
 
 
 ## Example config with REED_SWITCH
@@ -60,6 +62,20 @@ const ButtonConfigDef gButtonConfig[] = {
 };
 ```
 In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home Assistant this relay can be found in entities as binary_sensor.multi_relay_0_26.
+
+
+## Dependent relays
+The "dependOn" option in relays configuration is intended for turning ON and OFF power supplies, not to create scenes.
+For example, you have 12V power supply and two 12V LED lights:
+```
+...
+  {11, A1, RELAY_TRIGGER_LOW, 13, "LED Strip"},
+  {12, A2, RELAY_TRIGGER_LOW, 13, "Stairs light"},
+  {13, A3, RELAY_TRIGGER_LOW, -1, "Power supply 12V"},
+...
+```
+When you turn on _LED Strip_ and/or _Stairs light_, then _Power supply 12V_ will be automatically turned on.
+_Power supply 12V_ will be automatically turned off, when all parent devices will be turned off.
 
 
 ## Additional config
@@ -92,7 +108,7 @@ const unsigned long BUTTON_LONG_PRESS_INTERVAL = 800;
 
 Sketch description reported via MySensors to Home Automation System:
 ```
-const char MULTI_RELAY_DESCRIPTION[] = "Multi Relay";
+const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 ```
 
 

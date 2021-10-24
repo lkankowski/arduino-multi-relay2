@@ -3,22 +3,33 @@
 using namespace lkankowski;
 
 // static variables initialisation
-unsigned long lkankowski::Button::_doubleclickInterval = 350;
-unsigned long lkankowski::Button::_longclickInterval = 800;
-uint8_t lkankowski::Button::_monoStableTrigger = 0;
-
-#if defined(EXPANDER_PCF8574)
-  PCF8574 * BounceExp::_expander = NULL;
-#elif defined(EXPANDER_MCP23017)
-  Adafruit_MCP23017 * BounceExp::_expander = NULL;
-#endif
+unsigned long ButtonInterface::_doubleclickInterval = 300;
+unsigned long ButtonInterface::_longclickInterval = 800;
+bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-lkankowski::Button::Button()
-    : _pin(0)
-    , _type(MONO_STABLE)
-    , _description(NULL)
-    , _stateForPressed(false)
+ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int debounceInterval)
+{
+  HardwareSwitchInterface * switchHW =
+    HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
+                                    pin,
+                                    debounceInterval,
+                                    (type & PRESSED_STATE_HIGH) ? HIGH : LOW);
+
+  switch(type & 0x0f)
+  {
+    case MONO_STABLE: return new MonoStableButton(switchHW);
+    case BI_STABLE:   return new BiStableButton(switchHW);
+    case DING_DONG:   return new DingDongButton(switchHW);
+    case REED_SWITCH: return new ReedSwitch(switchHW);
+  }
+  delete switchHW;
+  return nullptr;
+};
+
+
+ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW)
+    : _switch(switchHW)
     , _clickRelayNum(-1)
     , _longclickRelayNum(-1)
     , _doubleclickRelayNum(-1)
@@ -27,125 +38,176 @@ lkankowski::Button::Button()
 {};
 
 
-void lkankowski::Button::initialize(int type, const char * desc) {
-  _type = type & 0x0f;
-  if (type & PRESSED_STATE_HIGH) _stateForPressed = true;
-  _description = desc;
+ButtonInterface::~ButtonInterface()
+{
+  delete _switch;
 };
 
 
-void lkankowski::Button::setAction(int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum) {
+MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
+{};
+
+
+BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
+{};
+
+
+DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
+{};
+
+
+ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW)
+  : ButtonInterface(switchHW)
+{};
+
+
+void ButtonInterface::setAction(int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
+{
   _clickRelayNum = clickRelayNum;
   _longclickRelayNum = longclickRelayNum;
   _doubleclickRelayNum = doubleclickRelayNum;
 };
 
 
-void lkankowski::Button::attachPin(int pin) {
-  _physicalButton.attach(pin, INPUT_PULLUP); // HIGH state when button is not pushed
+void ButtonInterface::attachPin()
+{
+  _switch->attachPin();
 };
 
 
-void lkankowski::Button::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval) {
+// static
+void ButtonInterface::setEventIntervals(unsigned long doubleclickInterval, unsigned long longclickInterval)
+{
   _doubleclickInterval = doubleclickInterval;
   _longclickInterval = longclickInterval;
 };
 
 
-void lkankowski::Button::setMonoStableTrigger(unsigned char monoStableTrigger) {
-  _monoStableTrigger = monoStableTrigger;
+// static
+void MonoStableButton::clickTriggerWhenPressed(bool clickTriggerWhenPressed)
+{
+  _clickTriggerWhenPressed = clickTriggerWhenPressed;
 };
 
 
-int lkankowski::Button::updateAndGetRelayNum() {
-
-  bool isPinChanged = _physicalButton.update();
-  int buttonPinState = _physicalButton.read();
-
-  int buttonAction = getEvent(isPinChanged, buttonPinState);
+int MonoStableButton::checkEvent(unsigned long millis)
+{
+  bool switchStateChanged = _switch->update(millis);
+  int buttonAction = calculateEvent(switchStateChanged, millis);
 
   int relayNum = -1;
-  if (isPinChanged && ((_type == DING_DONG) || (_type == REED_SWITCH))) {
-      relayNum = _clickRelayNum;
-  } else if (buttonAction & BUTTON_CLICK) {
+  if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickRelayNum;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - Click for relay " + relayNum);
+      Serial << F("Click for relay ") << relayNum << "\n";
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleclickRelayNum;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - DoubleClick for relay " + relayNum);
+      Serial << F("DoubleClick for relay ") << relayNum << "\n";
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longclickRelayNum;
     #ifdef DEBUG_ACTION
-      Serial.println(String(_description) + " - LongPress for relay " + relayNum);
+      Serial << F("LongPress for relay ") << relayNum << "\n";
     #endif
   }
-  return(relayNum);
+  return relayNum;
 };
 
 
-bool lkankowski::Button::getRelayState(bool relayState) {
+int BiStableButton::checkEvent(unsigned long millis)
+{
+  bool switchStateChanged = _switch->update(millis);
+  int buttonAction = calculateEvent(switchStateChanged, millis);
 
-  bool result;
-  if ((_type == MONO_STABLE) || (_type == BI_STABLE)) { // toggle relay
-    result = !relayState;
-  } else if (_type == DING_DONG) {
-    result = ! _physicalButton.read();
-  } else if (_type == REED_SWITCH) {
-    result = _physicalButton.read();
+  int relayNum = -1;
+  if (buttonAction & BUTTON_CLICK) {
+    relayNum = _clickRelayNum;
+    #ifdef DEBUG_ACTION
+      Serial << F("Click for relay ") << relayNum << "\n";
+    #endif
+  } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
+    relayNum = _doubleclickRelayNum;
+    #ifdef DEBUG_ACTION
+      Serial << F("DoubleClick for relay ") << relayNum << "\n";
+    #endif
   }
-  return(result);
+  return relayNum;
 };
 
 
-int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
 
+
+int DingDongButton::checkEvent(unsigned long millis)
+{
+  if (_switch->update(millis)) {
+    return _clickRelayNum;
+  }
+  return -1;
+};
+
+
+int ReedSwitch::checkEvent(unsigned long millis)
+{
+  if (_switch->update(millis)) {
+    return _clickRelayNum;
+  }
+  return -1;
+};
+
+
+bool MonoStableButton::getRelayState(bool relayState)
+{
+  return ! relayState;
+};
+
+
+bool BiStableButton::getRelayState(bool relayState)
+{
+  return ! relayState;
+};
+
+
+bool DingDongButton::getRelayState(bool relayState)
+{
+  return _switch->getState();
+};
+
+
+bool ReedSwitch::getRelayState(bool relayState)
+{
+  return ! _switch->getState();
+};
+
+
+int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
+{
   int result = BUTTON_NO_EVENT;
-  int activeLevel = pinState == (_type == REED_SWITCH ? ! _stateForPressed : _stateForPressed);
+  bool currentState = _switch->getState();
 
   bool hasLongClick = _longclickRelayNum != -1;
   bool hasDoubleClick = _doubleclickRelayNum != -1;
 
-  unsigned long now = millis();
-
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
-    if (isPinChanged) {
+    if (currentState) { //changed from switchStateChanged
       _startStateMillis = now;
-      if (_type == BI_STABLE) {
-        _eventState = BTN_STATE_1ST_CHANGE_BI;
-      } else {
-        _eventState = BTN_STATE_1ST_PRESS;
-        result = BUTTON_PRESSED;
-      }
+      _eventState = BTN_STATE_1ST_PRESS;
+      result = BUTTON_PRESSED;
     }
-
-  // BI_STABLE buttons only state
-  } else if (_eventState == BTN_STATE_1ST_CHANGE_BI) { // waiting for next change
-    // waiting for second change or timeout
-    if (!hasDoubleClick || ((now - _startStateMillis) > _doubleclickInterval)) {
-      // this was only a single short click
-      result = BUTTON_CLICK;
-      _eventState = BTN_STATE_INITIAL;
-    } else if (isPinChanged) {
-      result = BUTTON_DOUBLE_CLICK;
-      _eventState = BTN_STATE_INITIAL;
-    }
-
   } else if (_eventState == BTN_STATE_1ST_PRESS) { // waiting for 1st release
-
-    if (!activeLevel) { //released
+    if (!currentState) { //released
       if (!hasDoubleClick) {
         result = BUTTON_CLICK;
         _eventState = BTN_STATE_INITIAL;
       } else {
         _eventState = BTN_STATE_1ST_RELEASE;
       }
-
     } else { // still pressed
-      if ((!hasDoubleClick) && (!hasLongClick) && (pinState == _monoStableTrigger)) { // no long/double-click action, do click (old behavior)
+      if ((!hasDoubleClick) && (!hasLongClick) && (currentState == _clickTriggerWhenPressed)) { // no long/double-click action, do click
         result = BUTTON_CLICK | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
       } else if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
@@ -156,16 +218,14 @@ int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
         result = BUTTON_PRESSED;
       }
     }
-
   } else if (_eventState == BTN_STATE_1ST_RELEASE) {
     // waiting for press the second time or timeout
     if ((now - _startStateMillis) > _doubleclickInterval) {
       // this was only a single short click
       result = BUTTON_CLICK;
       _eventState = BTN_STATE_INITIAL;
-
-    } else if (activeLevel) { // pressed
-      if (pinState == _monoStableTrigger) {
+    } else if (currentState) { // pressed
+      if (currentState == _clickTriggerWhenPressed) {
         result = BUTTON_DOUBLE_CLICK | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
       } else {
@@ -173,29 +233,56 @@ int lkankowski::Button::getEvent(bool isPinChanged, int pinState) {
         _eventState = BTN_STATE_2ND_PRESS;
       }
     }
-
   } else if (_eventState == BTN_STATE_2ND_PRESS) { // waiting for second release
-    if (!activeLevel) { // released
+    if (!currentState) { // released
       // this was a 2 click sequence.
       // should we check double-click timeout here?
       result = BUTTON_DOUBLE_CLICK;
       _eventState = BTN_STATE_INITIAL;
     }
-
   } else if (_eventState == BTN_STATE_RELEASE_WAIT) { // waiting for release after long press
-    if (!activeLevel) { // released
+    if (!currentState) { // released
       _eventState = BTN_STATE_INITIAL;
     }
-  }
-
-  if (isPinChanged) {
-    result |= BUTTON_CHANGED;
   }
   return result;
 };
 
 
-String lkankowski::Button::toString() {
+int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
+{
+  int result = BUTTON_NO_EVENT;
 
-    return String("state=") + _physicalButton.read() + ", pin=" + _pin + "; " + _description;
+  bool hasDoubleClick = _doubleclickRelayNum != -1;
+
+  if (_eventState == BTN_STATE_INITIAL) { // waiting for change
+    if (switchStateChanged) {
+      _startStateMillis = now;
+      _eventState = BTN_STATE_1ST_CHANGE_BI;
+    }
+
+  // BI_STABLE buttons only state
+  } else if (_eventState == BTN_STATE_1ST_CHANGE_BI) { // waiting for next change
+    // waiting for second change or timeout
+    if (!hasDoubleClick || ((now - _startStateMillis) > _doubleclickInterval)) {
+      // this was only a single short click
+      result = BUTTON_CLICK;
+      _eventState = BTN_STATE_INITIAL;
+    } else if (switchStateChanged) {
+      result = BUTTON_DOUBLE_CLICK;
+      _eventState = BTN_STATE_INITIAL;
+    }
+  }
+  return result;
 };
+
+int DingDongButton::calculateEvent(bool switchStateChanged, unsigned long now)
+{
+  return 0;
+};
+
+int ReedSwitch::calculateEvent(bool switchStateChanged, unsigned long now)
+{
+  return 0;
+};
+

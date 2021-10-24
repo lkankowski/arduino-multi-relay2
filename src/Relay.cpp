@@ -1,140 +1,34 @@
 #include <Relay.h>
-#include <Arduino.h>
-#include <EEPROM.h>
 
 using namespace lkankowski;
 
-#ifdef DEBUG_STARTUP
-  extern unsigned long debugCounter;
-#endif
 
-// static variables initialisation
-int Relay::_impulsePending = 0;
-unsigned long Relay::_impulseInterval = 250;
-
-#if defined(EXPANDER_PCF8574)
-  PCF8574 * Relay::_expander = NULL;
-#elif defined(EXPANDER_MCP23017)
-  Adafruit_MCP23017 * Relay::_expander = NULL;
-#endif
-
-
-Relay::Relay()
-    : _pin(0)
-    , _state(false)
-    , _eepromIndex(0)
-    , _sensorId(0)
-    , _description(NULL)
-    , _hasStartupOverride(false)
-    , _triggerState(0)
-    , _isImpulse(false)
-    , _impulseStartMillis(0)
-    , _reportAsSensor(false)
+Relay::Relay(PinInterface * pin)
+  : _pin(pin)
+  , _state(false)
+  , _triggerState(0)
 {};
 
 
-void Relay::initialize(int index, int sensorId, const char * description) {
-    _eepromIndex = index;
-    _sensorId = sensorId;
-    _description = description;
+Relay::~Relay()
+{};
+
+
+void Relay::attachPin()
+{
+  _pin->pinMode(OUTPUT);
 };
 
 
-void Relay::attachPin(int pin) {
-    _pin = pin;
+bool Relay::changeState(bool state)
+{
+  bool stateHasChanged = state != _state;
+  uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
 
-    // Then set relay pins in output mode
-    #ifdef USE_EXPANDER
-      if ( pin & 0xff00 ) {
-        // EXPANDER
-        int expanderNo = (pin >> 8) - 1;
-        int expanderPin = pin & 0xff;
-        _expander[expanderNo].pinMode(expanderPin, OUTPUT);
-      } else {
-    #endif
-        pinMode(pin, OUTPUT);
-    #ifdef USE_EXPANDER
-      }
-    #endif
+  _pin->digitalWrite(digitalOutState);
+
+  _state = state;
+
+  return(stateHasChanged);
 };
 
-
-void Relay::setModeAndStartupState(int mode, bool resetState) {
-    
-    _triggerState = mode & RELAY_TRIGGER_HIGH;
-
-    if (mode & RELAY_IMPULSE) {
-      _isImpulse = true;
-      _state = false;
-      _hasStartupOverride = true;
-    } else if (mode & RELAY_STARTUP_ON) {
-      _state = true;
-      _hasStartupOverride = true;
-    } else if (mode & RELAY_STARTUP_OFF) {
-      _state = false;
-      _hasStartupOverride = true;
-    } else {
-        // Set relay to last known state (using eeprom storage)
-        _state = EEPROM.read(RELAY_STATE_STORAGE + _eepromIndex) == 1; // 1 - true, 0 - false
-        if (resetState && _state) {
-            EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, 0);
-            _state = false;
-      }
-    }
-};
-
-
-bool Relay::changeState(bool state) {
-
-    #ifdef DEBUG_STARTUP
-      Serial.println(String("# ")+(debugCounter++)+":"+millis()+" Relay::changeState: old_state="+_state+", new_state="+state
-                     +", _hasStartupOverride="+_hasStartupOverride+", _eepromIndex="+_eepromIndex
-                     +", (uint8_t) state="+((uint8_t) state)+", _isImpulse="+_isImpulse);
-    #endif
-    bool stateHasChanged = state != _state;
-    uint8_t digitalOutState = state ? _triggerState : ! _triggerState;
-
-    #ifdef USE_EXPANDER
-      if ( _pin & 0xff00 ) {
-        int expanderNo = (_pin >> 8) - 1;
-        int expanderPin = _pin & 0xff;
-        _expander[expanderNo].digitalWrite(expanderPin, digitalOutState);
-      } else {
-    #endif
-        digitalWrite(_pin, digitalOutState);
-    #ifdef USE_EXPANDER
-      }
-    #endif
-
-    if (! _hasStartupOverride && stateHasChanged) {
-        EEPROM.write(RELAY_STATE_STORAGE + _eepromIndex, (uint8_t) state);
-    }
-
-    if (_isImpulse && stateHasChanged) {
-      if (state) {
-        _impulseStartMillis = millis();
-        _impulsePending++;
-      } else {
-        _impulseStartMillis = 0;
-        _impulsePending--;
-      }
-    }
-
-    _state = state;
-
-    return(stateHasChanged);
-};
-
-
-bool Relay::impulseProcess() {
-
-  if (_isImpulse && _impulseStartMillis > 0) {
-    unsigned long currentMillis = millis();
-
-    // the "|| (currentMillis < myRelayImpulseStart[i])" is for "millis()" overflow protection
-    if ((currentMillis > _impulseStartMillis+_impulseInterval) || (currentMillis < _impulseStartMillis)) {
-      return(changeState(false));
-    }
-  }
-  return(false);
-};
