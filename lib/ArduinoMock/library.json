@@ -1,5 +1,0 @@
-{
-  "name": "ArduinoMock",
-  "description": "Some of Arduino classes mock for native platform",
-  "platforms": "native"
-}

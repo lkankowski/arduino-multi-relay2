@@ -21,6 +21,9 @@
     #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
   #endif
 
+#else
+  #include <string.h>
+  #define F(x) (x)
 #endif //ARDUINO
 
 
@@ -152,14 +155,16 @@ namespace lkankowski {
   void haltSystem();
 
   template <typename T> void PROGMEM_readAnything(const T * sce, T& dest) {
-  #ifdef ARDUINO
-    memcpy_P(&dest, sce, sizeof (T));
-  #else
-    memcpy(&dest, sce, sizeof (T));
-  #endif
+    #ifdef ARDUINO
+      memcpy_P(&dest, sce, sizeof (T));
+    #else
+      memcpy(&dest, sce, sizeof (T));
+    #endif
   };
 
-  template<class T> inline Print & operator <<(Print & obj, T arg) { obj.print(arg); return obj; };
+  #ifdef ARDUINO
+    template<class T> inline Print & operator <<(Print & obj, T arg) { obj.print(arg); return obj; };
+  #endif
 
 } // namespace lkankowski
 
@@ -189,6 +194,7 @@ class SerialClass
     void println(const char *);
     void println(int);
 };
+template<class T> inline SerialClass & operator <<(SerialClass & obj, T arg) { obj.print(arg); return obj; };
 
 extern SerialClass Serial;
 
