@@ -38,31 +38,31 @@ ButtonService::~ButtonService()
 //   }
 // }; 
 
-void ButtonService::setAction(int buttonNum, int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
+void ButtonService::setAction(size_t buttonNum, int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
 {
   _button[buttonNum]->setAction(clickRelayNum, longclickRelayNum, doubleclickRelayNum);
 };
 
 
-void ButtonService::attachPin(int buttonNum)
+void ButtonService::attachPin(size_t buttonNum)
 {
   _button[buttonNum]->attachPin();
 };
 
 
-int ButtonService::checkEvent(int buttonNum, unsigned long millis)
+int ButtonService::checkEvent(size_t buttonNum, unsigned long millis)
 {
   return _button[buttonNum]->checkEvent(millis);
 };
 
 
-bool ButtonService::getRelayState(int buttonNum, bool relayState)
+bool ButtonService::getRelayState(size_t buttonNum, bool relayState)
 {
   return _button[buttonNum]->getRelayState(relayState);
 };
 
 
-void ButtonService::printDebug(int buttonNum)
+void ButtonService::printDebug(size_t buttonNum)
 {
   Serial << F("state=") << _button[buttonNum]->getState() << "; " << _configuration.getButtonDescription(buttonNum) << "\n";
 };

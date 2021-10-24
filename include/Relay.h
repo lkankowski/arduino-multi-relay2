@@ -12,9 +12,9 @@ class Relay {
     ~Relay();
 
     void attachPin();
-    void setTriggerMode(uint8_t mode) { _triggerState = mode; };
+    inline void setTriggerMode(uint8_t mode) { _triggerState = mode; };
     bool changeState(bool);
-    bool getState() { return(_state); };
+    inline bool getState() { return(_state); };
 
   private:
     PinInterface * _pin;

@@ -20,15 +20,15 @@ class RelayService {
 
     void initialize(bool);
     bool changeState(int, bool, unsigned long);
-    bool getState(int);
+    inline bool getState(int relayNum) { return _relays[relayNum]->getState(); };
     bool impulseProcess(int, unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
-    bool isImpulsePending() { return(_impulsePending > 0); };
+    inline bool isImpulsePending() { return(_impulsePending > 0); };
     bool turnOffDependent(unsigned long);
-    int getSensorId(int);
-    void reportAsSensor(int relayNum) { _reportAsSensor[relayNum] = true; };
-    bool isSensor(int relayNum) const { return _reportAsSensor[relayNum]; };
-    const char * getDescription(int);
+    inline int getSensorId(int relayNum) { return _configuration.getRelaySensorId(relayNum); };
+    inline void reportAsSensor(int relayNum) { _reportAsSensor[relayNum] = true; };
+    inline bool isSensor(int relayNum) const { return _reportAsSensor[relayNum]; };
+    inline const char * getDescription(int relayNum) { return _configuration.getRelayDescription(relayNum); };
     void printDebug(int);
 
   private:

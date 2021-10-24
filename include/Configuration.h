@@ -58,14 +58,14 @@ class Configuration
     ~Configuration();
 
     int getRelayNum(int) const;
-    size_t getRelaysCount() const { return _relayConfig.size; };
+    inline size_t getRelaysCount() const { return _relayConfig.size; };
     int getRelayPin(size_t relayNum);
-    uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
+    inline uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
     uint8_t getRelayDependsOn(size_t relayNum);
-    int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
+    inline int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
     const char * getRelayDescription(size_t relayNum);
 
-    size_t getButtonsCount() const { return _buttonConfig.size; };
+    inline size_t getButtonsCount() const { return _buttonConfig.size; };
     ButtonType getButtonType(size_t buttonNum);
     int getButtonPin(size_t buttonNum);
     const char * getButtonDescription(size_t buttonNum);

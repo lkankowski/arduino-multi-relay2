@@ -114,11 +114,6 @@ bool RelayService::changeState(int relayNum, bool relayState, unsigned long mill
 };
 
 
-bool RelayService::getState(int relayNum)
-{
-  return _relays[relayNum]->getState();
-};
-
 bool RelayService::impulseProcess(int relayNum, unsigned long millis)
 {
   if (_relayIsImpulse[relayNum] && _relayImpulseStartMillis[relayNum] > 0) {
@@ -154,17 +149,6 @@ bool RelayService::turnOffDependent(unsigned long millis)
     }
   }
   return _isAnyDependentOn;
-};
-
-
-int RelayService::getSensorId(int relayNum)
-{
-  return _configuration.getRelaySensorId(relayNum);
-};
-
-const char * RelayService::getDescription(int relayNum)
-{
-  return _configuration.getRelayDescription(relayNum);
 };
 
 

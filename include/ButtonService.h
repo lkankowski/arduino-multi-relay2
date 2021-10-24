@@ -12,11 +12,11 @@ class ButtonService
     ~ButtonService();
 
     // void setup(); 
-    void setAction(int, int, int, int); 
-    void attachPin(int);
-    int checkEvent(int, unsigned long);
-    bool getRelayState(int, bool);
-    void printDebug(int);
+    void setAction(size_t, int, int, int); 
+    void attachPin(size_t);
+    int checkEvent(size_t, unsigned long);
+    bool getRelayState(size_t, bool);
+    void printDebug(size_t);
 
   private:
     Configuration & _configuration;
