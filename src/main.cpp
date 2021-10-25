@@ -45,7 +45,7 @@ RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(Re
 ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef
   #ifdef USE_EXPANDER
-    , gExpanderAddresses
+    , gExpanderAddresses, sizeof(gExpanderAddresses)
   #endif
 );
 

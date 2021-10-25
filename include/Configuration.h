@@ -56,7 +56,7 @@ class Configuration
   public:
     Configuration(const RelayConfigRef &, const ButtonConfigRef &
     #ifdef USE_EXPANDER
-      , const uint8_t *
+      , const uint8_t *, const size_t
     #endif
     );
     ~Configuration();
@@ -94,6 +94,7 @@ class Configuration
 
   #ifdef USE_EXPANDER
     const uint8_t * _expanderAddresses;
+    const size_t _expanderSize;
   #endif
 };
 
