@@ -71,8 +71,8 @@ void before()
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
-      for(int i = 0; i < sizeof(gExpanderAddresses); i++) {
-        Serial << expanderAddresses[i] << ",";
+      for(size_t i = 0; i < sizeof(gExpanderAddresses); i++) {
+        Serial << gExpanderAddresses[i] << ",";
       }
       Serial << "\n";
     #endif
