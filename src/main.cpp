@@ -138,9 +138,6 @@ void before()
     gButtonService.attachPin(buttonNum);
     if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
-    } else if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
     }
   }
 

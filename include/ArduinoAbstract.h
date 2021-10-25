@@ -36,7 +36,7 @@ namespace lkankowski {
 
       virtual void pinMode(uint8_t mode) const = 0;
       virtual uint8_t digitalRead() const = 0;
-      virtual void digitalWrite(uint8_t val) const = 0;
+      virtual void digitalWrite(uint8_t val) = 0;
   };
 
 
@@ -47,7 +47,7 @@ namespace lkankowski {
 
       void pinMode(uint8_t mode) const override;
       uint8_t digitalRead() const override;
-      void digitalWrite(uint8_t val) const override;
+      void digitalWrite(uint8_t val) override;
       static uint8_t digitalRead(uint8_t);
       
     private:
@@ -64,7 +64,7 @@ namespace lkankowski {
 
         void pinMode(uint8_t mode) const override;
         uint8_t digitalRead() const override;
-        void digitalWrite(uint8_t val) const override;
+        void digitalWrite(uint8_t val) override;
         
       private:
         uint8_t _pin;
@@ -82,7 +82,7 @@ namespace lkankowski {
 
         void pinMode(uint8_t mode) const override;
         uint8_t digitalRead() const override;
-        void digitalWrite(uint8_t val) const override;
+        void digitalWrite(uint8_t val) override;
         
       private:
         uint8_t _pin;
@@ -98,10 +98,11 @@ namespace lkankowski {
 
       void pinMode(uint8_t mode) const override;
       uint8_t digitalRead() const override;
-      void digitalWrite(uint8_t val) const override;
+      void digitalWrite(uint8_t val) override;
       
     private:
-      uint8_t _pin;
+      const uint8_t _pin;
+      uint8_t _value;
   };
 
 
@@ -111,9 +112,9 @@ namespace lkankowski {
     public:
       FakePin(uint8_t);
 
-      void pinMode(uint8_t mode) const override;
+      void pinMode(uint8_t) const override;
       uint8_t digitalRead() const override;
-      void digitalWrite(uint8_t val) const override;
+      void digitalWrite(uint8_t) override;
       
       static uint8_t _mode[10];
       static uint8_t _state[10];

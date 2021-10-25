@@ -144,6 +144,10 @@ int BiStableButton::checkEvent(unsigned long millis)
 
 int DingDongButton::checkEvent(unsigned long millis)
 {
+  if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
+    _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
+    return _clickRelayNum;
+  }
   if (_switch->update(millis)) {
     return _clickRelayNum;
   }
@@ -153,34 +157,14 @@ int DingDongButton::checkEvent(unsigned long millis)
 
 int ReedSwitch::checkEvent(unsigned long millis)
 {
+  if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
+    _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
+    return _clickRelayNum;
+  }
   if (_switch->update(millis)) {
     return _clickRelayNum;
   }
   return -1;
-};
-
-
-bool MonoStableButton::getRelayState(bool relayState)
-{
-  return ! relayState;
-};
-
-
-bool BiStableButton::getRelayState(bool relayState)
-{
-  return ! relayState;
-};
-
-
-bool DingDongButton::getRelayState(bool relayState)
-{
-  return _switch->getState();
-};
-
-
-bool ReedSwitch::getRelayState(bool relayState)
-{
-  return ! _switch->getState();
 };
 
 
@@ -274,15 +258,5 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
     }
   }
   return result;
-};
-
-int DingDongButton::calculateEvent(bool switchStateChanged, unsigned long now)
-{
-  return 0;
-};
-
-int ReedSwitch::calculateEvent(bool switchStateChanged, unsigned long now)
-{
-  return 0;
 };
 

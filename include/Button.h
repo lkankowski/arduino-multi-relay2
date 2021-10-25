@@ -27,7 +27,6 @@ class ButtonInterface
 
     enum ButtonState {
       BTN_STATE_INITIAL,
-      BTN_STATE_DEBOUNCE,
       BTN_STATE_1ST_PRESS,
       BTN_STATE_1ST_RELEASE,
       BTN_STATE_2ND_PRESS,
@@ -49,7 +48,7 @@ class ButtonInterface
     int _clickRelayNum;
     int _longclickRelayNum;
     int _doubleclickRelayNum;
-    int _eventState;
+    ButtonState _eventState;
     unsigned long _startStateMillis;
     static unsigned long _doubleclickInterval;
     static unsigned long _longclickInterval;
@@ -64,7 +63,7 @@ class MonoStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool getRelayState(bool) override;
+    inline bool getRelayState(bool relayState) override { return ! relayState; };
     static void clickTriggerWhenPressed(bool);
 
   protected:
@@ -81,7 +80,7 @@ class BiStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool getRelayState(bool) override;
+    inline bool getRelayState(bool relayState) override { return ! relayState; };
 
   protected:
     BiStableButton(HardwareSwitchInterface *);
@@ -95,11 +94,11 @@ class DingDongButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool getRelayState(bool) override;
+    inline bool getRelayState(bool) override { return _switch->getState(); };
 
   protected:
     DingDongButton(HardwareSwitchInterface *);
-    int calculateEvent(bool, unsigned long) override;
+    inline int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 
@@ -109,11 +108,11 @@ class ReedSwitch : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool getRelayState(bool) override;
+    inline bool getRelayState(bool) override { return ! _switch->getState(); };
 
   protected:
     ReedSwitch(HardwareSwitchInterface *);
-    int calculateEvent(bool, unsigned long) override;
+    inline int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 
