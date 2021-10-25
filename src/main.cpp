@@ -43,7 +43,11 @@ MyMessage myMessage; // MySensors - Sending Data
 
 RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
-Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
+Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef
+  #ifdef USE_EXPANDER
+    , gExpanderAddresses
+  #endif
+);
 
 Eeprom gEeprom;
 RelayService gRelayService(gConfiguration, gEeprom);

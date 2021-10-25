@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <ArduinoAbstract.h>
 #include <stddef.h>
 
 namespace lkankowski {
@@ -54,7 +54,11 @@ struct ButtonConfigRef {
 class Configuration
 {
   public:
-    Configuration(const RelayConfigRef &, const ButtonConfigRef &);
+    Configuration(const RelayConfigRef &, const ButtonConfigRef &
+    #ifdef USE_EXPANDER
+      , const uint8_t *
+    #endif
+    );
     ~Configuration();
 
     int getRelayNum(int) const;
@@ -87,6 +91,10 @@ class Configuration
     const ButtonConfigRef & _buttonConfig;
     ButtonConfigDef _buttonConfigEntryBuf;
     size_t _buttonNumInBuf = -1;
+
+  #ifdef USE_EXPANDER
+    const uint8_t * _expanderAddresses;
+  #endif
 };
 
 }; // namespace
