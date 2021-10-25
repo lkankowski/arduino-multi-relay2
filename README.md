@@ -18,7 +18,7 @@ Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more inf
 
 ## Main config file "config.h"
 ```
-const RelayConfigDef gRelayConfig[] = {
+const RelayConfigDef gRelayConfig[] PROGMEM = {
   {sensor id, relay pin, relay options, relay dependOn, relay description}
 };
 ```
@@ -33,7 +33,7 @@ Params description:
 * relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, max. 25 chars, can be empty ("")
 
 ```
-const ButtonConfigDef gButtonConfig[] = {
+const ButtonConfigDef gButtonConfig[] PROGMEM = {
   {button pin, button type, click relay id, long-click relay id, double-click relay id, button description}
 };
 ```
@@ -52,11 +52,11 @@ Params description:
 
 ## Example config with REED_SWITCH
 ```
-const RelayConfigDef gRelayConfig[] = {
+const RelayConfigDef gRelayConfig[] PROGMEM = {
   {26, 31, RELAY_TRIGGER_HIGH, "Garage Door"},
   ...
 };
-const ButtonConfigDef gButtonConfig[] = {
+const ButtonConfigDef gButtonConfig[] PROGMEM = {
   {43, REED_SWITCH, 26, -1, -1, "Garage Door reed switch"},
   ...
 };
@@ -144,15 +144,15 @@ and `EXPANDER_MCP23017` in `build_flags`.
 
 Configure expander id in `config.h` file:
 ```
-uint8_t expanderAddresses[] = {0x20}; //PCF8574
+const uint8_t expanderAddresses[] = {0x20}; //PCF8574
 ```
 or MCP23017:
 ```
-uint8_t expanderAddresses[] = {0}; //MCP23017
+const uint8_t expanderAddresses[] = {0}; //MCP23017
 ```
 For multiple expanders use different id's:
 ```
-uint8_t expanderAddresses[] = {0, 1, 2}; //MCP23017
+const uint8_t expanderAddresses[] = {0, 1, 2}; //MCP23017
 ```
 
 From now you can use expander pins in configuration of realays and buttons. To recognize expander pin, numbers start from 0x0100 and have special meaning:
@@ -169,7 +169,7 @@ E(0,0) - first pin on first expander
 
 ## Relay config example
 ```
-const RelayConfigDef gRelayConfig[] = {
+const RelayConfigDef gRelayConfig[] PROGMEM = {
   {1, E(0,3), RELAY_TRIGGER_LOW, "RELAY 1"}
 };
 ```
