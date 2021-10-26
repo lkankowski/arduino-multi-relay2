@@ -30,7 +30,7 @@ Params description:
   * RELAY_STARTUP_ON or RELAY_STARTUP_OFF - optional, startup state
   * RELAY_IMPULSE - optional, relay is turned on only for short period of time (defined in constant RELAY_IMPULSE_INTERVAL, 250ms by default), ignored for DING_DONG and REED_SWITCH buttons
 * relay dependOn - ID of relay that needs to be turned on before this one
-* relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, max. 25 chars, can be empty ("")
+* relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, max. 30 chars, can be empty ("")
 
 ```
 const ButtonConfigDef gButtonConfig[] PROGMEM = {
@@ -47,7 +47,7 @@ Params description:
 * click relay id - sensor id used in relay configuration
 * long-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
 * double-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
-* button description - debug only information, max. 25 chars, can be empty ("")
+* button description - debug only information, max. 30 chars, can be empty ("")
 
 
 ## Example config with REED_SWITCH

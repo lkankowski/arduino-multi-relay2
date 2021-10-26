@@ -27,7 +27,7 @@ struct RelayConfigDef {
   int relayPin;
   uint8_t relayOptions;
   int dependsOn;
-  char relayDescription[25];
+  char relayDescription[30];
 };
 
 struct RelayConfigRef {
@@ -42,7 +42,7 @@ struct ButtonConfigDef {
   int clickRelayId;
   int longClickRelayId;
   int doubleClickRelayId;
-  char buttonDescription[25];
+  char buttonDescription[30];
 };
 
 struct ButtonConfigRef {
