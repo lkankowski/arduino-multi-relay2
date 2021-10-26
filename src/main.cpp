@@ -10,8 +10,6 @@
 
 using namespace lkankowski;
 
-const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
-
 // Configuration in separate file
 #include <Configuration.h>
 #include "config.h"
@@ -232,7 +230,8 @@ void loop()
 // Executed after "before()" and before "setup()"
 void presentation()
 {
-  sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
+  sendSketchInfo((reinterpret_cast<const __FlashStringHelper *>(MULTI_RELAY_DESCRIPTION)),
+                 F(xstr(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
