@@ -65,7 +65,7 @@ void before()
            << F(", BUTTON_DEBOUNCE_INTERVAL=") << BUTTON_DEBOUNCE_INTERVAL
            << F(", BUTTON_DOUBLE_CLICK_INTERVAL=") << BUTTON_DOUBLE_CLICK_INTERVAL
            << F(", BUTTON_LONG_PRESS_INTERVAL=") << BUTTON_LONG_PRESS_INTERVAL
-           << F(", MULTI_RELAY_VERSION=") << MULTI_RELAY_VERSION << "\n";
+           << F(", MULTI_RELAY_VERSION=") << F(xstr(SKETCH_VERSION)) << "\n";
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
@@ -92,7 +92,7 @@ void before()
              << gConfiguration.getButtonDescription(buttonNum) << "\n";
     }
     Serial << F("# Debug startup - EEPROM (first value is version, relay state starts at ") << RELAY_STATE_STORAGE
-           << F("\n# > ");
+           << F(")\n# > ");
     for (size_t relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
       Serial << gEeprom.read(relayNum) << ",";
     }
