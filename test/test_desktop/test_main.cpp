@@ -8,6 +8,7 @@
 #include <unity.h>
 #include <iostream>
 #include <string>
+#include <typeinfo>
 
 
 //#define USE_EXPANDER
@@ -18,11 +19,9 @@ using namespace lkankowski;
 
 #include <config.h>
 
-RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
-ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
-
-//const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 
 Eeprom gEeprom;
 RelayService gRelayService(gConfiguration, gEeprom);
@@ -126,6 +125,79 @@ void test_config_buttons()
 };
 
 
+void test_configuration()
+{
+  const RelayConfigDef relayConfig[] = {
+    {0, 1, RELAY_TRIGGER_LOW, -1, "Lamp 1"},
+    {5, 2, RELAY_TRIGGER_LOW, -1, "Lamp 2"},
+    {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
+    {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, 3, "Lamp 4"},
+  };
+  const ButtonConfigDef buttonConfig[] = {
+    {1, MONO_STABLE, 1, -1, -1, "Button 1"},
+    {2, BI_STABLE,   2, -1, -1, "Button 2"},
+    {3, DING_DONG,   3, -1, -1, "Button 3"},
+    {4, REED_SWITCH | PRESSED_STATE_HIGH, 4, 7, 9, "Button 4"},
+  };
+  const ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  Configuration configuration(relayConfigRef, buttonConfigRef);
+
+  TEST_ASSERT_FALSE_MESSAGE(configuration.validate(), "[1] Test should fail because of lack of relay id '1', '2' and '4'");
+  //TODO: expander pin validation
+
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, configuration.getRelayNum(0), "[2] Lamp 1 should be 0");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, configuration.getRelayNum(5), "[3] Lamp 2 should be 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, configuration.getRelayNum(3), "[4] Lamp 3 should be 2");
+  
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getRelaysCount(), "[5] Relay config has 4 elements");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getRelayPin(3), "[6] Relay pin should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, configuration.getRelayOptions(3),
+                                "[7] Relay options should be RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(3, configuration.getRelayDependsOn(3), "[8] Relay depandsOn should be 3");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(5, configuration.getRelaySensorId(3), "[9] Relay sensorId should be 5");
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("Lamp 4", configuration.getRelayDescription(3), "[10] Relay description should be \"Lamp 4\"");
+  
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonsCount(), "[11] Button count should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonPin(3), "[12] Button pin should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(REED_SWITCH | PRESSED_STATE_HIGH, configuration.getButtonType(3),
+                                "[13] Button type should be REED_SWITCH | PRESSED_STATE_HIGH");
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("Button 4", configuration.getButtonDescription(3), "[14] Button description should be \"Button 4\"");
+  
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonClickAction(3), "[15] Button click action should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(7, configuration.getButtonLongClickAction(3), "[16] Button long click action should be 7");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(9, configuration.getButtonDoubleClickAction(3), "[17] Button double click action should be 9");
+};
+
+
+void test_virtual_pin()
+{
+  VirtualPin pin(1);
+  
+//  pin.pinMode(OUTPUT);  // mode currentlyis ignored
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_UINT8_MESSAGE(HIGH, pin.digitalRead(), "[1] Must be HIGH");
+  pin.digitalWrite(LOW);
+  TEST_ASSERT_EQUAL_UINT8_MESSAGE(LOW, pin.digitalRead(), "[2] Must be LOW");
+  pin.digitalWrite(HIGH);
+  TEST_ASSERT_EQUAL_UINT8_MESSAGE(HIGH, pin.digitalRead(), "[3] Must be HIGH again");
+};
+
+
+void test_pin_creator()
+{
+  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
+  PinCreator pinCreator;
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "PinCreator now should be initialized");
+  PinInterface * pin = pinCreator.create(-1);
+  TEST_ASSERT_NOT_NULL_MESSAGE(pin, "PinCreator should create an instance of a PinInterface");
+  // VirtualPin * v = dynamic_cast<VirtualPin *>(pin);
+  // TEST_ASSERT_NOT_NULL_MESSAGE(v, "PinCreator should create a VirtualPin instance");
+  delete pin;
+  // PinCreator::instance() now will be invalid
+};
+
+
 void test_relayservice()
 {
   const RelayConfigDef relayConfig[] = {
@@ -134,16 +206,12 @@ void test_relayservice()
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);
   relayService.initialize(true); // reset eeprom
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(0, configuration.getRelayNum(0), "[1] Lamp 1 should be 0");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, configuration.getRelayNum(5), "[1] Lamp 2 should be 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, configuration.getRelayNum(3), "[1] Lamp 3 should be 2");
-  
   TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[4], "[2] Lamp 4 should have pin state LOW when turned OFF");
 
@@ -162,7 +230,7 @@ void test_relay_startup_eeprom()
     {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW | RELAY_IMPULSE, -1, "Lamp 4"},
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -197,7 +265,7 @@ void test_relay_impulse()
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -227,7 +295,7 @@ void test_relay_dependsOn()
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
     {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);
@@ -532,17 +600,20 @@ void test_button_ding_dong_only()
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
 
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(0), "[2] checkEvent(0) on first call should trigger getting exact state by returning relay num");
+  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(false), "[3] relay state initially should be OFF");
+
   // DING (pressed)
   pin.digitalWrite(LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(60), "[3] checkEvent(60) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(61), "[4] checkEvent(61) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[4] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[5] checkEvent(60) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(161), "[6] checkEvent(61) should return -1");
 
   // DONG (released)
   pin.digitalWrite(HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[5] checkEvent(500) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[6] checkEvent(560) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[7] checkEvent(561) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[7] checkEvent(500) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[8] checkEvent(560) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[9] checkEvent(561) should return -1");
 
   delete button;
 };
@@ -558,19 +629,20 @@ void test_button_reed_switch_only()
   button->attachPin();
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[1] Button 1 should have pin state LOW");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[2] checkEvent(0) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(0), "[2] checkEvent(0) on first call should trigger getting exact state by returning relay num");
+  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(false), "[3] relay state initially should be OFF");
 
   // OPEN (reed switch disconnected)
   pin.digitalWrite(HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[3] checkEvent(100) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[4] checkEvent(160) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(161), "[5] checkEvent(161) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(100), "[4] checkEvent(100) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(160), "[5] checkEvent(160) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(161), "[6] checkEvent(161) should return -1");
 
   // CLOSED (reed switch connected)
   pin.digitalWrite(LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[6] checkEvent(500) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[7] checkEvent(560) should return 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[8] checkEvent(561) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(500), "[7] checkEvent(500) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(560), "[8] checkEvent(560) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(561), "[9] checkEvent(561) should return -1");
 
   delete button;
 };
@@ -633,11 +705,32 @@ void test_button_to_relay_state()
 };
 
 
-void test_PinCreator_instance()
+void test_buttonservice()
 {
-  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
-  PinCreator pinCreator;
-  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
+  const ButtonConfigDef buttonConfig[] = {
+    {1, MONO_STABLE, 1, -1, -1, "Button 1"},
+    {2, BI_STABLE,   2, -1, -1, "Button 2"},
+    {3, DING_DONG,   3, -1, -1, "Button 3"},
+    {4, DING_DONG,   4, -1, -1, "Button 4"},
+  };
+  const ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
+  Configuration configuration(gRelayConfigRef, buttonConfigRef);
+
+  ButtonService buttonService(configuration, 50);
+  // buttonService.attachPin(0);
+  // buttonService.attachPin(1);
+
+  // buttonService.setAction(0, 1, -1, -1);
+  // buttonService.setAction(2, 2, -1, -1);
+  // buttonService.checkEvent(0, 0);
+  // buttonService.checkEvent(1, 0);
+  // buttonService.checkEvent(0, 100);
+  // buttonService.checkEvent(1, 100);
+
+  // TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
+  TEST_IGNORE_MESSAGE("Will have more sense to implement after refactoring in branch callback");
+
+    // bool getRelayState(size_t, bool);
 };
 
 
@@ -649,6 +742,9 @@ int main(int argc, char **argv)
 
   RUN_TEST(test_config_relays);
   RUN_TEST(test_config_buttons);
+  RUN_TEST(test_configuration);
+  RUN_TEST(test_virtual_pin);
+  RUN_TEST(test_pin_creator);
   RUN_TEST(test_relayservice);
   RUN_TEST(test_relay_startup_eeprom);
   RUN_TEST(test_relay_impulse);
@@ -666,7 +762,7 @@ int main(int argc, char **argv)
   RUN_TEST(test_button_ding_dong_only);
   RUN_TEST(test_button_reed_switch_only);
   RUN_TEST(test_button_to_relay_state);
-  RUN_TEST(test_PinCreator_instance);
+  RUN_TEST(test_buttonservice);
 
   return UNITY_END();
 };

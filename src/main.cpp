@@ -65,7 +65,7 @@ void before()
            << F(", BUTTON_DEBOUNCE_INTERVAL=") << BUTTON_DEBOUNCE_INTERVAL
            << F(", BUTTON_DOUBLE_CLICK_INTERVAL=") << BUTTON_DOUBLE_CLICK_INTERVAL
            << F(", BUTTON_LONG_PRESS_INTERVAL=") << BUTTON_LONG_PRESS_INTERVAL
-           << F(", MULTI_RELAY_VERSION=") << MULTI_RELAY_VERSION << "\n";
+           << F(", MULTI_RELAY_VERSION=") << F(str(SKETCH_VERSION)) << "\n";
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
@@ -92,7 +92,7 @@ void before()
              << gConfiguration.getButtonDescription(buttonNum) << "\n";
     }
     Serial << F("# Debug startup - EEPROM (first value is version, relay state starts at ") << RELAY_STATE_STORAGE
-           << F("\n# > ");
+           << F(")\n# > ");
     for (size_t relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
       Serial << gEeprom.read(relayNum) << ",";
     }
@@ -138,9 +138,6 @@ void before()
     gButtonService.attachPin(buttonNum);
     if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
-    } else if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
-      gRelayService.changeState(clickActionRelayNum, gButtonService.getRelayState(buttonNum, false), millis());
     }
   }
 
@@ -231,7 +228,7 @@ void loop()
 void presentation()
 {
   sendSketchInfo((reinterpret_cast<const __FlashStringHelper *>(MULTI_RELAY_DESCRIPTION)),
-                 F(xstr(SKETCH_VERSION)));
+                 F(str(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {

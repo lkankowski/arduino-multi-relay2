@@ -22,17 +22,17 @@ const unsigned long BUTTON_DOUBLE_CLICK_INTERVAL = 350;
 const unsigned long BUTTON_LONG_PRESS_INTERVAL = 800;
 
 #ifdef USE_EXPANDER
-  uint8_t gExpanderAddresses[] = {0x20};
+  const uint8_t gExpanderAddresses[] = {0x20};
 #endif
 
-const char * const MULTI_RELAY_DESCRIPTION PROGMEM = "Multi Relay";
+const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 
 // Relays config - ID and PIN MUST BE UNIQUE (can't be repeated)!
 // Row params: relay ID - [0-254] sensor ID reported on MySensor Gateway
 //             relay pin - pin used for relay, can be expander pin via "E(x, y)" macro
 //             relay options - [RELAY_TRIGGER_LOW|RELAY_TRIGGER_HIGH] {RELAY_STARTUP_ON|RELAY_STARTUP_OFF} {RELAY_IMPULSE}
 //             relay dependOn - ID of relay that needs to be turned on before this one
-//             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, max. 25 chars, can be empty ("")
+//             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, max. 30 chars, can be empty ("")
 const RelayConfigDef gRelayConfig[] PROGMEM = {
   {1, 2, RELAY_TRIGGER_LOW, -1, "RELAY 1"},
   {2, 3, RELAY_TRIGGER_LOW, -1, "RELAY 2"},
@@ -50,7 +50,7 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 //             click action relay ID - MUST be defined in gRelayConfig
 //             long-press action relay ID - ignored for BI_STABLE, DING_DONG, REED_SWITCH
 //             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
-//             button description - debug only, max. 25 chars, can be empty ("")
+//             button description - debug only, max. 30 chars, can be empty ("")
 const ButtonConfigDef gButtonConfig[] PROGMEM = {
   {A0,  MONO_STABLE, 1,  -1, -1, "BUTTON 1"},
   {A1,  MONO_STABLE, 2,   6, -1, "BUTTON 2"},

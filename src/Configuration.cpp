@@ -26,7 +26,21 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
     _relayOptions[relayNum] = _relayConfigEntryBuf.relayOptions;
   }
 
-  // validate config
+  #ifndef UNIT_TEST
+    validate();
+  #endif
+};
+
+
+Configuration::~Configuration()
+{
+  delete _relayOptions;
+  delete _relaySensorId;
+};
+
+
+bool Configuration::validate()
+{
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
     for (size_t relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
@@ -36,6 +50,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
         if ((((size_t) (pin >> 8)) > _expanderSize) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial << F("Configuration failed - expander no or number of pins out of range for relay: ") << relayNum << "\n";
           haltSystem();
+          return false;
         }
       }
     }
@@ -50,6 +65,7 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
         if ((((size_t) (pin >> 8)) > _expanderSize) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial << F("Configuration failed - expander no or number of pins out of range for button: ") << buttonNum << "\n";
           haltSystem();
+          return false;
         }
       }
     #endif
@@ -62,16 +78,11 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
     if (fail) {
       Serial << F("Configuration failed - invalid '") << failAction[fail] << F(" relay ID' for button: ") << buttonNum << "\n";
       haltSystem();
+      return false;
     }
     // TODO: validate if pin is correct to the current board
   }
-};
-
-
-Configuration::~Configuration()
-{
-  delete _relayOptions;
-  delete _relaySensorId;
+  return true;
 };
 
 
@@ -107,17 +118,17 @@ const char * Configuration::getRelayDescription(size_t relayNum)
 };
 
 
-ButtonType Configuration::getButtonType(size_t buttonNum)
-{
-  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
-  return _buttonConfigEntryBuf.buttonType;
-};
-
-
 int Configuration::getButtonPin(size_t buttonNum)
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonPin;
+};
+
+
+int Configuration::getButtonType(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.buttonType;
 };
 
 

@@ -4,6 +4,7 @@
 using namespace lkankowski;
 
 
+// static
 PinCreator * PinCreator::_instance = nullptr;
 
 PinCreator::PinCreator()
@@ -22,7 +23,22 @@ PinCreator * PinCreator::instance()
   return _instance;
 };
 
+VirtualPin::VirtualPin(uint8_t pin)
+  : _pin(pin)
+{};
 
+void VirtualPin::pinMode(uint8_t val) const
+{};
+
+uint8_t VirtualPin::digitalRead() const
+{
+  return _value;
+};
+
+void VirtualPin::digitalWrite(uint8_t value)
+{
+  _value = value;
+};
 
 
 #ifdef ARDUINO
@@ -44,7 +60,7 @@ PinCreator * PinCreator::instance()
     return ::digitalRead(_pin);
   };
 
-  void ArduinoPin::digitalWrite(uint8_t val) const
+  void ArduinoPin::digitalWrite(uint8_t val)
   {
     ::digitalWrite(_pin, val);
   };
@@ -71,7 +87,7 @@ PinCreator * PinCreator::instance()
     return _expander.digitalRead(_pin);
   };
 
-  void PCF8574Pin::digitalWrite(uint8_t val) const
+  void PCF8574Pin::digitalWrite(uint8_t val)
   {
     _expander.digitalWrite(_pin, val);
   };
@@ -102,30 +118,11 @@ PinCreator * PinCreator::instance()
   };
 
 
-  void MCP23017Pin::digitalWrite(uint8_t val) const
+  void MCP23017Pin::digitalWrite(uint8_t val)
   {
     _expander.digitalWrite(_pin, val);
   };
   #endif
-
-
-  VirtualPin::VirtualPin(uint8_t pin)
-  {
-    _pin = pin;
-  };
-
-  void VirtualPin::pinMode(uint8_t val) const
-  {
-  };
-
-  uint8_t VirtualPin::digitalRead() const
-  {
-    return 0;
-  };
-
-  void VirtualPin::digitalWrite(uint8_t val) const
-  {
-  };
 
 
   PinInterface * PinCreator::create(int pin)
@@ -209,7 +206,7 @@ PinCreator * PinCreator::instance()
     return _state[_pin];
   };
 
-  void FakePin::digitalWrite(uint8_t val) const
+  void FakePin::digitalWrite(uint8_t val)
   {
     _state[_pin] = val;
   };
@@ -246,7 +243,6 @@ PinCreator * PinCreator::instance()
 
 void lkankowski::haltSystem()
 {
-  assert(0);
 };
 
 
