@@ -19,11 +19,9 @@ using namespace lkankowski;
 
 #include <config.h>
 
-RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
-ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
+const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
+const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
-
-//const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 
 Eeprom gEeprom;
 RelayService gRelayService(gConfiguration, gEeprom);
@@ -133,39 +131,42 @@ void test_configuration()
     {0, 1, RELAY_TRIGGER_LOW, -1, "Lamp 1"},
     {5, 2, RELAY_TRIGGER_LOW, -1, "Lamp 2"},
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
-    {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
+    {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, 3, "Lamp 4"},
   };
   const ButtonConfigDef buttonConfig[] = {
     {1, MONO_STABLE, 1, -1, -1, "Button 1"},
     {2, BI_STABLE,   2, -1, -1, "Button 2"},
     {3, DING_DONG,   3, -1, -1, "Button 3"},
-    {4, DING_DONG,   4, -1, -1, "Button 4"},
+    {4, REED_SWITCH | PRESSED_STATE_HIGH, 4, 7, 9, "Button 4"},
   };
-  ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, buttonConfigRef);
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(0, configuration.getRelayNum(0), "[1] Lamp 1 should be 0");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, configuration.getRelayNum(5), "[1] Lamp 2 should be 1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(2, configuration.getRelayNum(3), "[1] Lamp 3 should be 2");
+  TEST_ASSERT_FALSE_MESSAGE(configuration.validate(), "[1] Test should fail because of lack of relay id '1', '2' and '4'");
+  //TODO: expander pin validation
+
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, configuration.getRelayNum(0), "[2] Lamp 1 should be 0");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, configuration.getRelayNum(5), "[3] Lamp 2 should be 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(2, configuration.getRelayNum(3), "[4] Lamp 3 should be 2");
   
-
-  // int getRelayNum(int) const;
-  // inline size_t getRelaysCount() const { return _relayConfig.size; };
-  // int getRelayPin(size_t relayNum);
-  // inline uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
-  // uint8_t getRelayDependsOn(size_t relayNum);
-  // inline int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
-  // const char * getRelayDescription(size_t relayNum);
-
-  // inline size_t getButtonsCount() const { return _buttonConfig.size; };
-  // ButtonType getButtonType(size_t buttonNum);
-  // int getButtonPin(size_t buttonNum);
-  // const char * getButtonDescription(size_t buttonNum);
-  // int getButtonClickAction(size_t buttonNum);
-  // int getButtonLongClickAction(size_t buttonNum);
-  // int getButtonDoubleClickAction(size_t buttonNum);
-
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getRelaysCount(), "[5] Relay config has 4 elements");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getRelayPin(3), "[6] Relay pin should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, configuration.getRelayOptions(3),
+                                "[7] Relay options should be RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(3, configuration.getRelayDependsOn(3), "[8] Relay depandsOn should be 3");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(5, configuration.getRelaySensorId(3), "[9] Relay sensorId should be 5");
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("Lamp 4", configuration.getRelayDescription(3), "[10] Relay description should be \"Lamp 4\"");
+  
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonsCount(), "[11] Button count should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonPin(3), "[12] Button pin should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(REED_SWITCH | PRESSED_STATE_HIGH, (int) configuration.getButtonType(3),
+                                "[13] Button type should be REED_SWITCH | PRESSED_STATE_HIGH");
+  TEST_ASSERT_EQUAL_STRING_MESSAGE("Button 4", configuration.getButtonDescription(3), "[14] Button description should be \"Button 4\"");
+  
+  TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonClickAction(3), "[15] Button click action should be 4");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(7, configuration.getButtonLongClickAction(3), "[16] Button long click action should be 7");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(9, configuration.getButtonDoubleClickAction(3), "[17] Button double click action should be 9");
 };
 
 
@@ -205,7 +206,7 @@ void test_relayservice()
     {3, 3, RELAY_TRIGGER_LOW  | RELAY_STARTUP_OFF, -1, "Lamp 3"},
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, -1, "Lamp 4"},
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);
@@ -229,7 +230,7 @@ void test_relay_startup_eeprom()
     {3, 13, RELAY_TRIGGER_LOW, -1, "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW | RELAY_IMPULSE, -1, "Lamp 4"},
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -264,7 +265,7 @@ void test_relay_impulse()
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
   RelayService relayService(configuration, gEeprom);
@@ -294,7 +295,7 @@ void test_relay_dependsOn()
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
     {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
   };
-  RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
+  const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
   RelayService relayService(configuration, gEeprom);
@@ -712,7 +713,7 @@ void test_buttonservice()
     {3, DING_DONG,   3, -1, -1, "Button 3"},
     {4, DING_DONG,   4, -1, -1, "Button 4"},
   };
-  ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
+  const ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
   Configuration configuration(gRelayConfigRef, buttonConfigRef);
 
   ButtonService buttonService(configuration, 50);

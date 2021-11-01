@@ -2,8 +2,7 @@
 
 #include <stdint.h>
 
-#define xstr(a) str(a)
-#define str(a) #a
+#define str( a ) (#a)
 
 #ifdef ARDUINO
   #include <Arduino.h>

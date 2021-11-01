@@ -38,7 +38,7 @@ struct RelayConfigRef {
 
 struct ButtonConfigDef {
   int buttonPin;
-  ButtonType buttonType;
+  int buttonType;
   int clickRelayId;
   int longClickRelayId;
   int doubleClickRelayId;
@@ -61,6 +61,8 @@ class Configuration
     );
     ~Configuration();
 
+    bool validate();
+
     int getRelayNum(int) const;
     inline size_t getRelaysCount() const { return _relayConfig.size; };
     int getRelayPin(size_t relayNum);
@@ -70,8 +72,8 @@ class Configuration
     const char * getRelayDescription(size_t relayNum);
 
     inline size_t getButtonsCount() const { return _buttonConfig.size; };
-    ButtonType getButtonType(size_t buttonNum);
     int getButtonPin(size_t buttonNum);
+    int getButtonType(size_t buttonNum);
     const char * getButtonDescription(size_t buttonNum);
     int getButtonClickAction(size_t buttonNum);
     int getButtonLongClickAction(size_t buttonNum);

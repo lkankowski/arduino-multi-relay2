@@ -65,7 +65,7 @@ void before()
            << F(", BUTTON_DEBOUNCE_INTERVAL=") << BUTTON_DEBOUNCE_INTERVAL
            << F(", BUTTON_DOUBLE_CLICK_INTERVAL=") << BUTTON_DOUBLE_CLICK_INTERVAL
            << F(", BUTTON_LONG_PRESS_INTERVAL=") << BUTTON_LONG_PRESS_INTERVAL
-           << F(", MULTI_RELAY_VERSION=") << F(xstr(SKETCH_VERSION)) << "\n";
+           << F(", MULTI_RELAY_VERSION=") << F(str(SKETCH_VERSION)) << "\n";
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
@@ -228,7 +228,7 @@ void loop()
 void presentation()
 {
   sendSketchInfo((reinterpret_cast<const __FlashStringHelper *>(MULTI_RELAY_DESCRIPTION)),
-                 F(xstr(SKETCH_VERSION)));
+                 F(str(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {

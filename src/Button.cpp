@@ -8,7 +8,7 @@ unsigned long ButtonInterface::_longclickInterval = 800;
 bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-ButtonInterface * ButtonInterface::create(ButtonType type, int pin, unsigned int debounceInterval)
+ButtonInterface * ButtonInterface::create(int type, int pin, unsigned int debounceInterval)
 {
   HardwareSwitchInterface * switchHW =
     HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,

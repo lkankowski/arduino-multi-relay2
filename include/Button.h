@@ -19,7 +19,7 @@ class ButtonInterface
     bool getState() const { return _switch->getState(); };
 
     static void setEventIntervals(unsigned long, unsigned long);
-    static ButtonInterface * create(ButtonType, int, unsigned int);
+    static ButtonInterface * create(int, int, unsigned int);
 
   protected:
     ButtonInterface(HardwareSwitchInterface *);

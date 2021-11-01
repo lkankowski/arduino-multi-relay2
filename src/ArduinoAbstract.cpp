@@ -243,7 +243,6 @@ void VirtualPin::digitalWrite(uint8_t value)
 
 void lkankowski::haltSystem()
 {
-  assert(0);
 };
 
 
