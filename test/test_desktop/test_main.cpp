@@ -160,7 +160,7 @@ void test_configuration()
   
   TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonsCount(), "[11] Button count should be 4");
   TEST_ASSERT_EQUAL_INT_MESSAGE(4, configuration.getButtonPin(3), "[12] Button pin should be 4");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(REED_SWITCH | PRESSED_STATE_HIGH, (int) configuration.getButtonType(3),
+  TEST_ASSERT_EQUAL_INT_MESSAGE(REED_SWITCH | PRESSED_STATE_HIGH, configuration.getButtonType(3),
                                 "[13] Button type should be REED_SWITCH | PRESSED_STATE_HIGH");
   TEST_ASSERT_EQUAL_STRING_MESSAGE("Button 4", configuration.getButtonDescription(3), "[14] Button description should be \"Button 4\"");
   
