@@ -53,8 +53,3 @@ bool DebouncedSwitch::update(unsigned long millis)
   return false;
 };
 
-
-bool DebouncedSwitch::getState() const
-{
-  return _debouncedState;
-};

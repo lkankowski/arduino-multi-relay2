@@ -27,12 +27,11 @@ class ButtonInterface
     bool getState() const { return _switch->getState(); };
 
     static void setEventIntervals(unsigned long, unsigned long);
-    static ButtonInterface * create(ButtonType, int, unsigned int, int, int, int);
+    static ButtonInterface * create(int, int, unsigned int, int, int, int);
 
   protected:
     enum ButtonState {
       BTN_STATE_INITIAL,
-      BTN_STATE_DEBOUNCE,
       BTN_STATE_1ST_PRESS,
       BTN_STATE_1ST_RELEASE,
       BTN_STATE_2ND_PRESS,

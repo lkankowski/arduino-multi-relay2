@@ -1,13 +1,21 @@
 #include <Configuration.h>
-#include <ArduinoAbstract.h>
 
 using namespace lkankowski;
 
 
 Configuration::Configuration(const RelayConfigRef & relayConfig,
-                             const ButtonConfigRef & buttonConfig)
+                             const ButtonConfigRef & buttonConfig
+                          #ifdef USE_EXPANDER
+                           , const uint8_t * expanderAddresses
+                           , size_t expanderSize
+                          #endif
+                            )
   : _relayConfig(relayConfig)
   , _buttonConfig(buttonConfig)
+#ifdef USE_EXPANDER
+  , _expanderAddresses(expanderAddresses)
+  , _expanderSize(expanderSize)
+#endif
 {
   _relaySensorId = new uint8_t[_relayConfig.size];
   _relayOptions = new uint8_t[_relayConfig.size];
@@ -18,16 +26,31 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
     _relayOptions[relayNum] = _relayConfigEntryBuf.relayOptions;
   }
 
-  // validate config
+  #ifndef UNIT_TEST
+    validate();
+  #endif
+};
+
+
+Configuration::~Configuration()
+{
+  delete _relayOptions;
+  delete _relaySensorId;
+};
+
+
+bool Configuration::validate()
+{
   #ifdef USE_EXPANDER
     //TODO: check if I2C pins are not used
-    for (int relayNum = 0; relayNum < gRelayConfigRef.size; relayNum++) {
+    for (size_t relayNum = 0; relayNum < _relayConfig.size; relayNum++) {
       loadRelayConfigFromPROGMEM(relayNum);
       int pin = _relayConfigEntryBuf.relayPin;
-      if (pin & 0xff00) {
-        if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
+      if (pin >= 0x0100) {
+        if ((((size_t) (pin >> 8)) > _expanderSize) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial << F("Configuration failed - expander no or number of pins out of range for relay: ") << relayNum << "\n";
           haltSystem();
+          return false;
         }
       }
     }
@@ -38,10 +61,11 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
 
     #ifdef USE_EXPANDER
       int pin = _buttonConfigEntryBuf.buttonPin;
-      if (pin & 0xff00) {
-        if (((pin >> 8) > sizeof(gExpanderAddresses)) || ((pin & 0xff) >= EXPANDER_PINS)) {
+      if (pin >= 0x0100) {
+        if ((((size_t) (pin >> 8)) > _expanderSize) || ((pin & 0xff) >= EXPANDER_PINS)) {
           Serial << F("Configuration failed - expander no or number of pins out of range for button: ") << buttonNum << "\n";
           haltSystem();
+          return false;
         }
       }
     #endif
@@ -54,16 +78,11 @@ Configuration::Configuration(const RelayConfigRef & relayConfig,
     if (fail) {
       Serial << F("Configuration failed - invalid '") << failAction[fail] << F(" relay ID' for button: ") << buttonNum << "\n";
       haltSystem();
+      return false;
     }
     // TODO: validate if pin is correct to the current board
   }
-};
-
-
-Configuration::~Configuration()
-{
-  delete _relayOptions;
-  delete _relaySensorId;
+  return true;
 };
 
 
@@ -99,17 +118,17 @@ const char * Configuration::getRelayDescription(size_t relayNum)
 };
 
 
-ButtonType Configuration::getButtonType(size_t buttonNum)
-{
-  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
-  return _buttonConfigEntryBuf.buttonType;
-};
-
-
 int Configuration::getButtonPin(size_t buttonNum)
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonPin;
+};
+
+
+int Configuration::getButtonType(size_t buttonNum)
+{
+  if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
+  return _buttonConfigEntryBuf.buttonType;
 };
 
 

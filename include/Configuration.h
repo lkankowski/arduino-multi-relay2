@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <ArduinoAbstract.h>
 #include <stddef.h>
 
 namespace lkankowski {
@@ -27,7 +27,7 @@ struct RelayConfigDef {
   int relayPin;
   uint8_t relayOptions;
   int dependsOn;
-  char relayDescription[25];
+  char relayDescription[30];
 };
 
 struct RelayConfigRef {
@@ -38,11 +38,11 @@ struct RelayConfigRef {
 
 struct ButtonConfigDef {
   int buttonPin;
-  ButtonType buttonType;
+  int buttonType;
   int clickRelayId;
   int longClickRelayId;
   int doubleClickRelayId;
-  char buttonDescription[25];
+  char buttonDescription[30];
 };
 
 struct ButtonConfigRef {
@@ -54,8 +54,14 @@ struct ButtonConfigRef {
 class Configuration
 {
   public:
-    Configuration(const RelayConfigRef &, const ButtonConfigRef &);
+    Configuration(const RelayConfigRef &, const ButtonConfigRef &
+    #ifdef USE_EXPANDER
+      , const uint8_t *, const size_t
+    #endif
+    );
     ~Configuration();
+
+    bool validate();
 
     int getRelayNum(int) const;
     inline size_t getRelaysCount() const { return _relayConfig.size; };
@@ -66,8 +72,8 @@ class Configuration
     const char * getRelayDescription(size_t relayNum);
 
     inline size_t getButtonsCount() const { return _buttonConfig.size; };
-    ButtonType getButtonType(size_t buttonNum);
     int getButtonPin(size_t buttonNum);
+    int getButtonType(size_t buttonNum);
     const char * getButtonDescription(size_t buttonNum);
     int getButtonClickAction(size_t buttonNum);
     int getButtonLongClickAction(size_t buttonNum);
@@ -87,6 +93,11 @@ class Configuration
     const ButtonConfigRef & _buttonConfig;
     ButtonConfigDef _buttonConfigEntryBuf;
     size_t _buttonNumInBuf = -1;
+
+  #ifdef USE_EXPANDER
+    const uint8_t * _expanderAddresses;
+    const size_t _expanderSize;
+  #endif
 };
 
 }; // namespace

@@ -31,7 +31,7 @@ class DebouncedSwitch : public HardwareSwitchInterface
 
     void attachPin() override;
     bool update(unsigned long) override;
-    bool getState() const override;
+    inline bool getState() const override { return _debouncedState; };
   
   private:
     DebouncedSwitch(int, unsigned int, uint8_t);

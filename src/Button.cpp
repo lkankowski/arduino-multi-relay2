@@ -8,7 +8,7 @@ unsigned long ButtonInterface::_longclickInterval = 800;
 bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-ButtonInterface * ButtonInterface::create(ButtonType type,
+ButtonInterface * ButtonInterface::create(int type,
                                           int pin,
                                           unsigned int debounceInterval,
                                           int clickActionId,
@@ -154,6 +154,10 @@ int BiStableButton::checkEvent(unsigned long millis)
 
 int DingDongButton::checkEvent(unsigned long millis)
 {
+  if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
+    _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
+    return _clickActionId;
+  }
   if (_switch->update(millis)) {
     return _clickActionId;
   }
@@ -163,6 +167,10 @@ int DingDongButton::checkEvent(unsigned long millis)
 
 int ReedSwitch::checkEvent(unsigned long millis)
 {
+  if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
+    _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
+    return _clickActionId;
+  }
   if (_switch->update(millis)) {
     return _clickActionId;
   }
@@ -261,6 +269,7 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
   }
   return result;
 };
+
 
 int DingDongButton::calculateEvent(bool switchStateChanged, unsigned long now)
 {

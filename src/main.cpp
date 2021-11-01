@@ -11,8 +11,6 @@
 
 using namespace lkankowski;
 
-const char * MULTI_RELAY_VERSION = xstr(SKETCH_VERSION);
-
 // Configuration in separate file
 #include <Configuration.h>
 #include "config.h"
@@ -44,7 +42,11 @@ MyMessage myMessage; // MySensors - Sending Data
 
 RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
-Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
+Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef
+  #ifdef USE_EXPANDER
+    , gExpanderAddresses, sizeof(gExpanderAddresses)
+  #endif
+);
 
 Eeprom gEeprom;
 MySensorsWrapper gMySensorsWrapper;
@@ -65,12 +67,12 @@ void before()
            << F(", BUTTON_DEBOUNCE_INTERVAL=") << BUTTON_DEBOUNCE_INTERVAL
            << F(", BUTTON_DOUBLE_CLICK_INTERVAL=") << BUTTON_DOUBLE_CLICK_INTERVAL
            << F(", BUTTON_LONG_PRESS_INTERVAL=") << BUTTON_LONG_PRESS_INTERVAL
-           << F(", MULTI_RELAY_VERSION=") << MULTI_RELAY_VERSION << "\n";
+           << F(", MULTI_RELAY_VERSION=") << F(str(SKETCH_VERSION)) << "\n";
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
-      for(int i = 0; i < sizeof(gExpanderAddresses); i++) {
-        Serial << expanderAddresses[i] << ",";
+      for(size_t i = 0; i < sizeof(gExpanderAddresses); i++) {
+        Serial << gExpanderAddresses[i] << ",";
       }
       Serial << "\n";
     #endif
@@ -92,7 +94,7 @@ void before()
              << gConfiguration.getButtonDescription(buttonNum) << "\n";
     }
     Serial << F("# Debug startup - EEPROM (first value is version, relay state starts at ") << RELAY_STATE_STORAGE
-           << F("\n# > ");
+           << F(")\n# > ");
     for (size_t relayNum = 0; relayNum < gRelayConfigRef.size+1; relayNum++) {
       Serial << gEeprom.read(relayNum) << ",";
     }
@@ -138,9 +140,6 @@ void before()
     gButtonService.attachPin(buttonNum);
     if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
-      gRelayService.changeRelayState(clickActionRelayNum, gButtonService.getRelayState(buttonNum), millis());
-    } else if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == DING_DONG) && (clickActionRelayNum > -1)) {
-      gRelayService.changeRelayState(clickActionRelayNum, gButtonService.getRelayState(buttonNum), millis());
     }
   }
 
@@ -232,7 +231,8 @@ void loop()
 // Executed after "before()" and before "setup()"
 void presentation()
 {
-  sendSketchInfo(MULTI_RELAY_DESCRIPTION, MULTI_RELAY_VERSION );
+  sendSketchInfo((reinterpret_cast<const __FlashStringHelper *>(MULTI_RELAY_DESCRIPTION)),
+                 F(str(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
