@@ -162,5 +162,5 @@ void RelayService::printDebug(int relayNum)
          << F(", store_eeprom=") << _storeRelayToEEPROM[relayNum]
          << F(", eeprom=") << _eeprom.read(RELAY_STATE_STORAGE + relayNum)
          << F(", DependsOn=") << (_relayDependsOn[relayNum] == -1 ? -1 : _configuration.getRelaySensorId(_relayDependsOn[relayNum]))
-         << F(", ") << _configuration.getRelayDescription(relayNum);
+         << F(", ") << _configuration.getRelayDescription(relayNum) << "\n";
 };
