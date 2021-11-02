@@ -6,7 +6,8 @@ namespace lkankowski {
 
   class RelayStateNotification {
     public:
-      virtual void notify(const uint8_t sensorId, bool state, bool isSensor);
-  };
+      virtual ~RelayStateNotification() {};
 
+      virtual void notify(const uint8_t relayNum, bool state) = 0;
+  };
 };

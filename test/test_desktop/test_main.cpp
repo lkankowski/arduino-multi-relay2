@@ -134,8 +134,8 @@ void test_configuration()
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, 3, "Lamp 4"},
   };
   const ButtonConfigDef buttonConfig[] = {
-    {1, MONO_STABLE, 1, -1, -1, "Button 1"},
-    {2, BI_STABLE,   2, -1, -1, "Button 2"},
+    {1, MONO_STABLE, 0, -1, -1, "Button 1"},
+    {2, BI_STABLE,   5, -1, -1, "Button 2"},
     {3, DING_DONG,   3, -1, -1, "Button 3"},
     {4, REED_SWITCH | PRESSED_STATE_HIGH, 4, 7, 9, "Button 4"},
   };
@@ -277,10 +277,10 @@ void test_relay_impulse()
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[2] Lamp 1 should be ON");
   TEST_ASSERT_TRUE_MESSAGE(relayService.isImpulsePending(), "[2] Lamp 1 should be isImpulsePending() == TRUE");
 
-  TEST_ASSERT_FALSE_MESSAGE(relayService.impulseProcess(0, 1200UL), "[3] impulseProcess() should be FALSE");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.processImpulse(0, 1200UL), "[3] processImpulse() should be FALSE");
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[3] Lamp 1 should be ON");
   
-  TEST_ASSERT_TRUE_MESSAGE(relayService.impulseProcess(0, 1300UL), "[4] impulseProcess() should be TRUE");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.processImpulse(0, 1300UL), "[4] processImpulse() should be TRUE");
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[4] Lamp 1 should be OFF");
   TEST_ASSERT_FALSE_MESSAGE(relayService.isImpulsePending(), "[4] Lamp 1 should be isImpulsePending() == FALSE");
 };

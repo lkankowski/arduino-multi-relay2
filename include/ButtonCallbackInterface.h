@@ -5,8 +5,10 @@ namespace lkankowski {
   class ButtonCallbackInterface
   {
     public:
-      virtual bool changeRelayState(int, bool, unsigned long);
-      virtual bool toogleRelayState(int, unsigned long);
+      virtual ~ButtonCallbackInterface() {};
+
+      virtual bool changeRelayState(int, bool, unsigned long) = 0;
+      virtual bool toogleRelayState(int, unsigned long) = 0;
   };
 
 };

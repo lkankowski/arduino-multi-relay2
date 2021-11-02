@@ -53,7 +53,7 @@ Params description:
 ## Example config with REED_SWITCH
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
-  {26, 31, RELAY_TRIGGER_HIGH, "Garage Door"},
+  {26, 31, RELAY_TRIGGER_HIGH, -1, "Garage Door"},
   ...
 };
 const ButtonConfigDef gButtonConfig[] PROGMEM = {
@@ -170,7 +170,7 @@ E(0,0) - first pin on first expander
 ## Relay config example
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
-  {1, E(0,3), RELAY_TRIGGER_LOW, "RELAY 1"}
+  {1, E(0,3), RELAY_TRIGGER_LOW, -1, "RELAY 1"}
 };
 ```
 

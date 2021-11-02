@@ -32,9 +32,12 @@ ButtonService::~ButtonService()
 };
 
 
-void ButtonService::attachPin(size_t buttonNum)
+void ButtonService::attachPins()
 {
-  _button[buttonNum]->attachPin();
+  for (size_t buttonNum = 0; buttonNum < _configuration.getButtonsCount(); buttonNum++)
+  {
+    _button[buttonNum]->attachPin();
+  }
 };
 
 

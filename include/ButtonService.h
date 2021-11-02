@@ -12,7 +12,7 @@ class ButtonService
     ButtonService(Configuration &, unsigned int, ButtonCallbackInterface & buttonCallback);
     ~ButtonService();
 
-    void attachPin(size_t);
+    void attachPins();
     void checkEventsAndDoActions(unsigned long);
     bool getRelayState(size_t);
     void printDebug(size_t);

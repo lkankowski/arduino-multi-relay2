@@ -18,19 +18,15 @@ class RelayService : public ButtonCallbackInterface
 {
   public:
     RelayService(Configuration &, EepromInterface &, RelayStateNotification &);
-    ~RelayService();
+    virtual ~RelayService();
 
     void initialize(bool);
     bool changeRelayState(int, bool, unsigned long) override;
     bool toogleRelayState(int, unsigned long) override;
     inline bool getState(int relayNum) { return _relays[relayNum]->getState(); };
-    bool impulseProcess(int, unsigned long);
+    void processImpulse(unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
-    inline bool isImpulsePending() { return(_impulsePending > 0); };
     bool turnOffDependent(unsigned long);
-    inline int getSensorId(int relayNum) { return _configuration.getRelaySensorId(relayNum); };
-    inline void reportAsSensor(int relayNum) { _reportAsSensor[relayNum] = true; };
-    inline bool isSensor(int relayNum) const { return _reportAsSensor[relayNum]; };
     inline const char * getDescription(int relayNum) { return _configuration.getRelayDescription(relayNum); };
     void printDebug(int);
 
@@ -48,7 +44,6 @@ class RelayService : public ButtonCallbackInterface
     int * _relayDependsOn;
     bool _isAnyDependentOn;
     bool * _isRelayDependent;
-    bool * _reportAsSensor;
 };
 
 }; // namespace
