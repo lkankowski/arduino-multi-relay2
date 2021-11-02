@@ -5,6 +5,7 @@
 #include <EepromAbstract.h>
 #include <RelayService.h>
 #include <ButtonService.h>
+#include <MySensorsWrapper.h>
 #define MY_GATEWAY_SERIAL
 #include <MySensors.h>
 
@@ -48,8 +49,9 @@ Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef
 );
 
 Eeprom gEeprom;
-RelayService gRelayService(gConfiguration, gEeprom);
-ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL);
+MySensorsWrapper gMySensorsWrapper;
+RelayService gRelayService(gConfiguration, gEeprom, gMySensorsWrapper);
+ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL, gRelayService);
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
 
@@ -65,7 +67,7 @@ void before()
            << F(", BUTTON_DEBOUNCE_INTERVAL=") << BUTTON_DEBOUNCE_INTERVAL
            << F(", BUTTON_DOUBLE_CLICK_INTERVAL=") << BUTTON_DOUBLE_CLICK_INTERVAL
            << F(", BUTTON_LONG_PRESS_INTERVAL=") << BUTTON_LONG_PRESS_INTERVAL
-           << F(", MULTI_RELAY_VERSION=") << F(str(SKETCH_VERSION)) << "\n";
+           << F(", MULTI_RELAY_VERSION=") << F(xstr(SKETCH_VERSION)) << "\n";
 
     #ifdef USE_EXPANDER
       Serial << F("# Debug startup - expander config\n");
@@ -127,14 +129,9 @@ void before()
   ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
   MonoStableButton::clickTriggerWhenPressed(true);
 
-  // gButtonService.setup();
   for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++)
   {
     int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
-    gButtonService.setAction(buttonNum,
-                            clickActionRelayNum,
-                            gConfiguration.getRelayNum(gConfiguration.getButtonLongClickAction(buttonNum)),
-                            gConfiguration.getRelayNum(gConfiguration.getButtonDoubleClickAction(buttonNum)));
     gButtonService.attachPin(buttonNum);
     if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
       gRelayService.reportAsSensor(clickActionRelayNum);
@@ -180,26 +177,7 @@ void loop()
     }
   }
 
-  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
-    
-    int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
-    if (relayNum > -1) {
-      // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
-      bool relayState = gButtonService.getRelayState(buttonNum, gRelayService.getState(relayNum));
-
-      #ifdef IGNORE_BUTTONS_START_MS
-        if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
-      #endif
-          if (gRelayService.changeState(relayNum, relayState, loopStartMillis)) {
-            myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-            myMessage.setSensor(gRelayService.getSensorId(relayNum));
-            send(myMessage.set(relayState));
-          }
-      #ifdef IGNORE_BUTTONS_START_MS
-        }
-      #endif
-    }
-  }
+  gButtonService.checkEventsAndDoActions(loopStartMillis);
 
   #ifdef DEBUG_STATS
     if (debugStatsOn) {
@@ -228,7 +206,7 @@ void loop()
 void presentation()
 {
   sendSketchInfo((reinterpret_cast<const __FlashStringHelper *>(MULTI_RELAY_DESCRIPTION)),
-                 F(str(SKETCH_VERSION)));
+                 F(xstr(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
@@ -253,7 +231,7 @@ void receive(const MyMessage &message)
     if (message.getType() == V_STATUS) {
       int relayNum = gConfiguration.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
-      gRelayService.changeState(relayNum, message.getBool(), millis());
+      gRelayService.changeRelayState(relayNum, message.getBool(), millis());
       if (! message.getRequestEcho()) {
         myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
         myMessage.setSensor(message.getSensor());

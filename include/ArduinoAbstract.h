@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#define xstr(a) str(a)
 #define str( a ) (#a)
 
 #ifdef ARDUINO
@@ -18,6 +19,9 @@
     #define USE_EXPANDER
     #include <Wire.h>    // Required for I2C communication
     #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
+  #else
+    // when no expander treat pins as Virtual
+    #define E(expanderNo, ExpanderPin) (-(((expanderNo+1)<<8) | (ExpanderPin)))
   #endif
 
 #else

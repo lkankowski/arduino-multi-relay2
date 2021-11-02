@@ -25,6 +25,7 @@ PinCreator * PinCreator::instance()
 
 VirtualPin::VirtualPin(uint8_t pin)
   : _pin(pin)
+  , _value(1)
 {};
 
 void VirtualPin::pinMode(uint8_t val) const

@@ -12,14 +12,14 @@ class ButtonInterface
     virtual ~ButtonInterface();
 
     virtual int checkEvent(unsigned long) = 0;
-    virtual bool getRelayState(bool) = 0;
+    virtual bool isToogle() = 0;
+    virtual bool getRelayState() = 0;
 
-    void setAction(int, int, int);
     void attachPin();
     bool getState() const { return _switch->getState(); };
 
     static void setEventIntervals(unsigned long, unsigned long);
-    static ButtonInterface * create(int, int, unsigned int);
+    static ButtonInterface * create(int, int, unsigned int, int, int, int);
 
   protected:
     ButtonInterface(HardwareSwitchInterface *);
@@ -45,11 +45,9 @@ class ButtonInterface
     };
 
     HardwareSwitchInterface * _switch;
-    int _clickRelayNum;
-    int _longclickRelayNum;
-    int _doubleclickRelayNum;
     ButtonState _eventState;
     unsigned long _startStateMillis;
+    int _clickActionId;
     static unsigned long _doubleclickInterval;
     static unsigned long _longclickInterval;
 };
@@ -63,13 +61,16 @@ class MonoStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    inline bool getRelayState(bool relayState) override { return ! relayState; };
+    bool isToogle() override { return true; };
+    bool getRelayState() override { return false; };
     static void clickTriggerWhenPressed(bool);
 
   protected:
-    MonoStableButton(HardwareSwitchInterface *);
+    MonoStableButton(HardwareSwitchInterface *, int, int, int);
     int calculateEvent(bool, unsigned long) override;
 
+    int _longClickActionId;
+    int _doubleClickActionId;
     static bool _clickTriggerWhenPressed;
 };
 
@@ -80,11 +81,14 @@ class BiStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    inline bool getRelayState(bool relayState) override { return ! relayState; };
+    bool isToogle() override { return true; };
+    bool getRelayState() override { return false; };
 
   protected:
-    BiStableButton(HardwareSwitchInterface *);
+    BiStableButton(HardwareSwitchInterface *, int, int);
     int calculateEvent(bool, unsigned long) override;
+
+    int _doubleClickActionId;
 };
 
 
@@ -94,11 +98,12 @@ class DingDongButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    inline bool getRelayState(bool) override { return _switch->getState(); };
+    bool isToogle() override { return false; };
+    bool getRelayState() override { return _switch->getState(); };
 
   protected:
-    DingDongButton(HardwareSwitchInterface *);
-    inline int calculateEvent(bool, unsigned long) override { return 0; };
+    DingDongButton(HardwareSwitchInterface *, int);
+    int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 
@@ -108,11 +113,12 @@ class ReedSwitch : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    inline bool getRelayState(bool) override { return ! _switch->getState(); };
+    bool isToogle() override { return false; };
+    bool getRelayState() override { return ! _switch->getState(); };
 
   protected:
-    ReedSwitch(HardwareSwitchInterface *);
-    inline int calculateEvent(bool, unsigned long) override { return 0; };
+    ReedSwitch(HardwareSwitchInterface *, int);
+    int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 

@@ -3,9 +3,10 @@
 using namespace lkankowski;
 
 
-RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom)
+RelayService::RelayService(Configuration & configuration, EepromInterface & eeprom, RelayStateNotification & relayStateNotification)
   : _configuration(configuration)
   , _eeprom(eeprom)
+  , _relayStateNotification(relayStateNotification)
   , _impulsePending(0)
   , _impulseInterval(250)
   , _isAnyDependentOn(false)
@@ -83,10 +84,10 @@ void RelayService::initialize(bool resetEepromState)
 };
 
 
-bool RelayService::changeState(int relayNum, bool relayState, unsigned long millis)
+bool RelayService::changeRelayState(int relayNum, bool relayState, unsigned long millis)
 {
   if (relayState && (_relayDependsOn[relayNum] != -1)) {
-    changeState(_relayDependsOn[relayNum], true, millis);
+    changeRelayState(_relayDependsOn[relayNum], true, millis);
     _isAnyDependentOn = true;
   }
   #ifdef DEBUG_STARTUP
@@ -110,7 +111,18 @@ bool RelayService::changeState(int relayNum, bool relayState, unsigned long mill
     }
   }
 
+  if (stateHasChanged) {
+    _relayStateNotification.notify(_configuration.getRelaySensorId(relayNum),
+                                   relayState,
+                                   _reportAsSensor[relayNum]);
+  }
   return stateHasChanged;
+};
+
+
+bool RelayService::toogleRelayState(int relayNum, unsigned long millis)
+{
+  return changeRelayState(relayNum, ! getState(relayNum), millis);
 };
 
 
@@ -120,7 +132,7 @@ bool RelayService::impulseProcess(int relayNum, unsigned long millis)
 
     // the "|| (millis < myRelayImpulseStart[i])" is for "millis()" overflow protection
     if ((millis > _relayImpulseStartMillis[relayNum]+_impulseInterval) || (millis < _relayImpulseStartMillis[relayNum])) {
-      return changeState(relayNum, false, millis);
+      return changeRelayState(relayNum, false, millis);
     }
   }
   return(false);
@@ -141,7 +153,7 @@ bool RelayService::turnOffDependent(unsigned long millis)
           }
         }
         if (allMasterTurnedOff) {
-          changeState(relayNum, false, millis);
+          changeRelayState(relayNum, false, millis);
         } else {
           _isAnyDependentOn = true;
         }
@@ -162,5 +174,5 @@ void RelayService::printDebug(int relayNum)
          << F(", store_eeprom=") << _storeRelayToEEPROM[relayNum]
          << F(", eeprom=") << _eeprom.read(RELAY_STATE_STORAGE + relayNum)
          << F(", DependsOn=") << (_relayDependsOn[relayNum] == -1 ? -1 : _configuration.getRelaySensorId(_relayDependsOn[relayNum]))
-         << F(", ") << _configuration.getRelayDescription(relayNum);
+         << F(", ") << _configuration.getRelayDescription(relayNum) << "\n";
 };
