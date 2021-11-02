@@ -122,7 +122,7 @@ bool RelayService::changeRelayState(int relayNum, bool relayState, unsigned long
 
 bool RelayService::toogleRelayState(int relayNum, unsigned long millis)
 {
-  return changeRelayState(relayNum, getState(relayNum), millis);
+  return changeRelayState(relayNum, ! getState(relayNum), millis);
 };
 
 

@@ -113,17 +113,17 @@ int MonoStableButton::checkEvent(unsigned long millis)
   if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("Click for relay ") << relayNum << "\n";
+      Serial << F("Click for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("DoubleClick for relay ") << relayNum << "\n";
+      Serial << F("DoubleClick for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
     relayNum = _longClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("LongPress for relay ") << relayNum << "\n";
+      Serial << F("LongPress for relayNum=") << relayNum;
     #endif
   }
   return relayNum;
@@ -139,12 +139,12 @@ int BiStableButton::checkEvent(unsigned long millis)
   if (buttonAction & BUTTON_CLICK) {
     relayNum = _clickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("Click for relay ") << relayNum << "\n";
+      Serial << F("Click for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
     relayNum = _doubleClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("DoubleClick for relay ") << relayNum << "\n";
+      Serial << F("DoubleClick for relayNum=") << relayNum;
     #endif
   }
 

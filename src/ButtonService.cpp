@@ -43,6 +43,12 @@ void ButtonService::checkEventsAndDoActions(unsigned long millis)
   for (size_t buttonNum = 0; buttonNum < _configuration.getButtonsCount(); buttonNum++)
   {    
     int relayNum = _button[buttonNum]->checkEvent(millis);
+    #ifdef DEBUG_ACTION
+      if (relayNum > -1) {
+        Serial << " (" << _configuration.getRelayDescription(relayNum) << F(") on buttonNum=")
+               << buttonNum << " (" << _configuration.getButtonDescription(buttonNum) << ")\n";
+      }
+    #endif
     if (relayNum > -1) {
       // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
       #ifdef IGNORE_BUTTONS_START_MS
