@@ -18,10 +18,6 @@ ButtonService::ButtonService(Configuration & configuration,
                                                  _configuration.getRelayNum(_configuration.getButtonClickAction(buttonNum)),
                                                  _configuration.getRelayNum(_configuration.getButtonLongClickAction(buttonNum)),
                                                  _configuration.getRelayNum(_configuration.getButtonDoubleClickAction(buttonNum)));
-    // setAction(buttonNum,
-    //           _configuration.getRelayNum(_configuration.getButtonClickAction(buttonNum)),
-    //           _configuration.getRelayNum(_configuration.getButtonClickAction(buttonNum),
-    //           _configuration.getRelayNum(_configuration.getButtonDoubleClickAction(buttonNum)));
   }
 };
 
@@ -63,12 +59,6 @@ void ButtonService::checkEventsAndDoActions(unsigned long millis)
     }
   }
 };
-
-
-// int ButtonService::checkEvent(int buttonNum, unsigned long millis)
-// {
-//   return _button[buttonNum]->checkEvent(millis);
-// };
 
 
 bool ButtonService::getRelayState(size_t buttonNum)

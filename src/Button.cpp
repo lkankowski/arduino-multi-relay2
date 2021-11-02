@@ -270,14 +270,3 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
   return result;
 };
 
-
-int DingDongButton::calculateEvent(bool switchStateChanged, unsigned long now)
-{
-  return 0;
-};
-
-int ReedSwitch::calculateEvent(bool switchStateChanged, unsigned long now)
-{
-  return 0;
-};
-

@@ -107,7 +107,7 @@ class DingDongButton : public ButtonInterface
 
   protected:
     DingDongButton(HardwareSwitchInterface *, int);
-    int calculateEvent(bool, unsigned long) override;
+    int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 
@@ -122,7 +122,7 @@ class ReedSwitch : public ButtonInterface
 
   protected:
     ReedSwitch(HardwareSwitchInterface *, int);
-    int calculateEvent(bool, unsigned long) override;
+    int calculateEvent(bool, unsigned long) override { return 0; };
 };
 
 
