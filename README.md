@@ -65,7 +65,7 @@ In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home
 
 
 ## Dependent relays
-The "dependOn" option in relays configuration is intended for turning ON and OFF power supplies, not to create scenes.
+The "dependOn" option in relays configuration is intended for turning ON and OFF power supplies or simple scenes.
 For example, you have 12V power supply and two 12V LED lights:
 ```
 ...
@@ -76,6 +76,16 @@ For example, you have 12V power supply and two 12V LED lights:
 ```
 When you turn on _LED Strip_ and/or _Stairs light_, then _Power supply 12V_ will be automatically turned on.
 _Power supply 12V_ will be automatically turned off, when all parent devices will be turned off.
+
+Additionaly there is one way option:
+```
+...
+  {11, A1, RELAY_TRIGGER_LOW, 12, "Hall light"},
+  {12, A2, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"},
+...
+```
+In this variant, when you turn on _Hall light_, also _Stairs light_ will turn on,
+but when you turn off _Hall light_, _Stairs light_ will remain on.
 
 
 ## Additional config

@@ -187,10 +187,15 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
   bool hasDoubleClick = _doubleClickActionId != -1;
 
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
-    if (currentState) { //changed from switchStateChanged
-      _startStateMillis = now;
-      _eventState = BTN_STATE_1ST_PRESS;
-      result = BUTTON_PRESSED;
+    if (currentState) {
+      if ((!hasDoubleClick) && (!hasLongClick) && (_clickTriggerWhenPressed)) { // no long/double-click action, do click
+        result = BUTTON_CLICK | BUTTON_PRESSED;
+        _eventState = BTN_STATE_RELEASE_WAIT;
+      } else {
+        _startStateMillis = now;
+        _eventState = BTN_STATE_1ST_PRESS;
+        result = BUTTON_PRESSED;
+      }
     }
   } else if (_eventState == BTN_STATE_1ST_PRESS) { // waiting for 1st release
     if (!currentState) { //released
@@ -201,10 +206,7 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
         _eventState = BTN_STATE_1ST_RELEASE;
       }
     } else { // still pressed
-      if ((!hasDoubleClick) && (!hasLongClick) && (currentState == _clickTriggerWhenPressed)) { // no long/double-click action, do click
-        result = BUTTON_CLICK | BUTTON_PRESSED;
-        _eventState = BTN_STATE_RELEASE_WAIT;
-      } else if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
+      if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
         result = BUTTON_LONG_PRESS | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
       } else {

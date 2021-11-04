@@ -1,6 +1,8 @@
 #include <MySensorsWrapper.h>
-#define MY_GATEWAY_SERIAL
-#include <core/MySensorsCore.h>
+#ifdef ARDUINO
+  #define MY_GATEWAY_SERIAL
+  #include <core/MySensorsCore.h>
+#endif
 
 using namespace lkankowski;
 
@@ -36,17 +38,21 @@ inline void MySensorsWrapper::notify(const uint8_t relayNum, bool state)
 
 void MySensorsWrapper::notifyWithId(const uint8_t relayNum, bool state, const uint8_t sensorId)
 {
-  _myMessage.setSensor(sensorId);
-  _myMessage.setType(_reportAsSensor[relayNum] ? V_TRIPPED : V_STATUS);
-  send(_myMessage.set(state));
+  #ifdef ARDUINO
+    _myMessage.setSensor(sensorId);
+    _myMessage.setType(_reportAsSensor[relayNum] ? V_TRIPPED : V_STATUS);
+    send(_myMessage.set(state));
+  #endif
 };
 
 
 void MySensorsWrapper::present() const
 {
   for (size_t relayNum = 0; relayNum < _configuration.getRelaysCount(); relayNum++) {
-    ::present(_configuration.getRelaySensorId(relayNum),
-              _reportAsSensor[relayNum] ? S_DOOR : S_BINARY,
-              _configuration.getRelayDescription(relayNum));
+    #ifdef ARDUINO
+      ::present(_configuration.getRelaySensorId(relayNum),
+                _reportAsSensor[relayNum] ? S_DOOR : S_BINARY,
+                _configuration.getRelayDescription(relayNum));
+    #endif
   }
 };

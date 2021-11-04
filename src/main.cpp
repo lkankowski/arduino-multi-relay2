@@ -127,7 +127,7 @@ void before()
   
   // Setup buttons
   ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
-  MonoStableButton::clickTriggerWhenPressed(true);
+  MonoStableButton::clickTriggerWhenPressed(MONO_STABLE_TRIGGER == LOW);
   gButtonService.attachPins();
 
   if (versionChangeResetState) {

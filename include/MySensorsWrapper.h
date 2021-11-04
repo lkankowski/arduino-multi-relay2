@@ -2,8 +2,9 @@
 
 #include <RelayStateNotification.h>
 #include <Configuration.h>
-#include <core/MyMessage.h>
-
+#ifdef ARDUINO
+  #include <core/MyMessage.h>
+#endif
 
 namespace lkankowski {
 
@@ -19,7 +20,9 @@ namespace lkankowski {
 
     private:
       Configuration & _configuration;
+    #ifdef ARDUINO
       MyMessage _myMessage;
+    #endif
       bool * _reportAsSensor;
   };
 
