@@ -88,3 +88,5 @@ const ButtonConfigDef gButtonConfig[] PROGMEM = {
 // MQTT broker port
 #define MY_PORT 1883
 
+// MAC address can be anything you want but should be unique on your network
+//#define MY_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
