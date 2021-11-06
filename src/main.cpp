@@ -263,9 +263,6 @@ void receive(const MyMessage &message)
         }
       } else if (debugCommand == 8) { // free memory
         Serial << F("# FreeMemory [bytes]: ") << freeMemory() << "\n";
-        #ifdef ARDUINO_ARCH_ESP8266
-          Serial << F("# ESP CPU Frequency: ") << ESP.getCpuFreqMHz() << "MHz\n";
-        #endif
       }
     }
   }

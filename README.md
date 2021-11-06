@@ -6,6 +6,13 @@ One relay can have one or more switches, or not at all if you want to control it
 
 # Get Started
 
+## Download
+Most convinient is to clone the repo, but you have to have installed `git`:
+```
+git clone https://github.com/lkankowski/arduino-multi-relay2.git
+```
+You can also download zip file.
+
 ## Create config file
 Copy file "config.h.sample" into "config.h". There is sample configuration you need to examine and customize for your own needs.
 
@@ -13,6 +20,20 @@ Copy file "config.h.sample" into "config.h". There is sample configuration you n
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
 By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
 Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
+
+
+## Updating
+If you have 'git', just type `git pull`. Otherwise download zip file and extract to new directory - remember, to copy 'config.h'.
+It is also convinient to have 'config.h' someware else, then you can use symbolic link. In Windows you have 2 options:
+
+CMD:
+```
+mklink "<your local config directory>\config.h" "<your repo directory>\include\config.h"
+```
+or PowerShell (assuming that you run in main repo directory):
+```
+Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\include\config.h' -ItemType SymbolicLink -Value '<your local config directory>\config.h'"
+
 
 # Configuration
 
