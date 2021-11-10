@@ -144,7 +144,7 @@ const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 
 
 # Debugging
-In a `platformio.ini` file in section [common_env_data] you can uncomment (remove ";" at the beginning) some `build_flags`:
+In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the beginning) some `build_flags`:
 * `DEBUG_STATS=1000` - time statistics can be printed on serial, when they are triggered via appropriate MySensors command - read more in MySensors commands sections
 * `DEBUG_COMMUNICATION` - show some debug information about received MySensors commands on serial
 * `DEBUG_ACTION` - detailed information about button actions on serial
@@ -155,17 +155,17 @@ In a `platformio.ini` file in section [common_env_data] you can uncomment (remov
 Only one expander library at a time is supported.
 
 ## PCF8574
-To use expander PCF8574 you have to install library:
-* download https://github.com/skywodd/pcf8574_arduino_library as zip archive
-* extract directory PCF8574 into `lib/PCF8574`
-Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description)
+Support of PCF8574 expander is provided by the library `https://github.com/skywodd/pcf8574_arduino_library`.
+Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
 
-And in a `platformio.ini` file in section [common_env_data] uncomment `EXPANDER_PCF8574` in `build_flags`.
+In a `platformio.ini` file in section [env] uncomment:
+* `-D EXPANDER_PCF8574` in `build_flags`,
+* `https://github.com/skywodd/pcf8574_arduino_library` in `lib_deps`.
 
 ## MCP23017
 https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
 
-In a `platformio.ini` file in section [common_env_data] uncomment expander library in `lib_deps_builtin`:
+In a `platformio.ini` file in section [evv] uncomment expander library in `lib_deps_builtin`:
 ```
 adafruit/Adafruit MCP23017 Arduino Library @ ^1.2.0
 ```
@@ -206,7 +206,7 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 ```
 
 # Troubleshoting
-If you have problems with unstable relay or button states after startup, uncomment `IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
+If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
 
 # MySensors special commands
 Show debug stats
