@@ -7,6 +7,11 @@
 #include <ButtonService.h>
 #include <MySensorsWrapper.h>
 #include <Configuration.h>
+#if defined(MY_GATEWAY_W5100)
+  #include <Ethernet.h>
+#elif defined(MY_GATEWAY_ENC28J60)
+  #include <UIPEthernet.h>
+#endif
 
 using namespace lkankowski;
 

@@ -3,8 +3,16 @@ Arduino program to handle relays and control them using switches with support fo
 Configuration is very simple - one line for a single relay and one line for single switch
 Every switch support debouncing, multiple types of switches and additional actions like double-click and long-press - everything in a single line of configuration. Relays can be configured as LOW/HIGH level trigger, startup state ON or OFF and impulse type.
 One relay can have one or more switches, or not at all if you want to control it only by home automation system.
+MQTT...
 
 # Get Started
+
+## Supported platforms and hardware
+Arduino mega2560 and other AVR ATmega family
+ESP8266
+MY_GATEWAY_ENC28J60
+MY_GATEWAY_W5100
+expanders xxx described later in this doc.
 
 ## Download
 Most convinient is to clone the repo, but you have to have installed `git`:
@@ -237,4 +245,14 @@ Clean EEPROM & reset
 Reset
 ```
 0;255;1;0;24;6
+```
+
+Validate relays & eeprom state
+```
+0;255;1;0;24;7
+```
+
+Free Memory
+```
+0;255;1;0;24;8
 ```
