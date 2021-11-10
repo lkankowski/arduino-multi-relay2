@@ -8,6 +8,12 @@
 #ifdef ARDUINO
   #include <Arduino.h>
 
+  #if defined(ARDUINO_ARCH_AVR)
+    #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+  #elif defined (ARDUINO_ARCH_ESP8266)
+    #define IS_VALID_DIGITAL_PIN(pin) (((pin >= 0) && (pin < NUM_DIGITAL_PINS)) && !isFlashInterfacePin(pin))
+  #endif
+
   #if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
     #if defined(EXPANDER_PCF8574)
       #include "PCF8574.h"
@@ -169,6 +175,8 @@ namespace lkankowski {
   #ifdef ARDUINO
     template<class T> inline Print & operator <<(Print & obj, T arg) { obj.print(arg); return obj; };
   #endif
+
+  uint32_t freeMemory();
 
 } // namespace lkankowski
 

@@ -6,14 +6,13 @@
 #include <RelayService.h>
 #include <ButtonService.h>
 #include <MySensorsWrapper.h>
-#define MY_GATEWAY_SERIAL
-#include <MySensors.h>
+#include <Configuration.h>
 
 using namespace lkankowski;
 
 // Configuration in separate file
-#include <Configuration.h>
 #include "config.h"
+#include <MySensors.h>
 
 #ifdef USE_EXPANDER
   #if defined(EXPANDER_PCF8574)
@@ -262,6 +261,8 @@ void receive(const MyMessage &message)
                    << F(", eeprom=") << gEeprom.read(RELAY_STATE_STORAGE + relayNum) << "\n";
           }
         }
+      } else if (debugCommand == 8) { // free memory
+        Serial << F("# FreeMemory [bytes]: ") << freeMemory() << "\n";
       }
     }
   }

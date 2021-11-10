@@ -6,6 +6,13 @@ One relay can have one or more switches, or not at all if you want to control it
 
 # Get Started
 
+## Download
+Most convinient is to clone the repo, but you have to have installed `git`:
+```
+git clone https://github.com/lkankowski/arduino-multi-relay2.git
+```
+You can also download zip file.
+
 ## Create config file
 Copy file "config.h.sample" into "config.h". There is sample configuration you need to examine and customize for your own needs.
 
@@ -13,6 +20,20 @@ Copy file "config.h.sample" into "config.h". There is sample configuration you n
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
 By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
 Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
+
+
+## Updating
+If you have 'git', just type `git pull`. Otherwise download zip file and extract to new directory - remember, to copy 'config.h'.
+It is also convinient to have 'config.h' someware else, then you can use symbolic link. In Windows you have 2 options:
+
+CMD:
+```
+mklink "<your local config directory>\config.h" "<your repo directory>\include\config.h"
+```
+or PowerShell (assuming that you run in main repo directory):
+```
+Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\include\config.h' -ItemType SymbolicLink -Value '<your local config directory>\config.h'"
+
 
 # Configuration
 
@@ -123,7 +144,7 @@ const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 
 
 # Debugging
-In a `platformio.ini` file in section [common_env_data] you can uncomment (remove ";" at the beginning) some `build_flags`:
+In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the beginning) some `build_flags`:
 * `DEBUG_STATS=1000` - time statistics can be printed on serial, when they are triggered via appropriate MySensors command - read more in MySensors commands sections
 * `DEBUG_COMMUNICATION` - show some debug information about received MySensors commands on serial
 * `DEBUG_ACTION` - detailed information about button actions on serial
@@ -134,17 +155,17 @@ In a `platformio.ini` file in section [common_env_data] you can uncomment (remov
 Only one expander library at a time is supported.
 
 ## PCF8574
-To use expander PCF8574 you have to install library:
-* download https://github.com/skywodd/pcf8574_arduino_library as zip archive
-* extract directory PCF8574 into `lib/PCF8574`
-Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description)
+Support of PCF8574 expander is provided by the library `https://github.com/skywodd/pcf8574_arduino_library`.
+Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
 
-And in a `platformio.ini` file in section [common_env_data] uncomment `EXPANDER_PCF8574` in `build_flags`.
+In a `platformio.ini` file in section [env] uncomment:
+* `-D EXPANDER_PCF8574` in `build_flags`,
+* `https://github.com/skywodd/pcf8574_arduino_library` in `lib_deps`.
 
 ## MCP23017
 https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
 
-In a `platformio.ini` file in section [common_env_data] uncomment expander library in `lib_deps_builtin`:
+In a `platformio.ini` file in section [evv] uncomment expander library in `lib_deps_builtin`:
 ```
 adafruit/Adafruit MCP23017 Arduino Library @ ^1.2.0
 ```
@@ -185,7 +206,7 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 ```
 
 # Troubleshoting
-If you have problems with unstable relay or button states after startup, uncomment `IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
+If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
 
 # MySensors special commands
 Show debug stats

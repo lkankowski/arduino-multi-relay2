@@ -128,7 +128,7 @@ void VirtualPin::digitalWrite(uint8_t value)
 
   PinInterface * PinCreator::create(int pin)
   {
-    if (pin < 0) return new VirtualPin(pin);
+    if (!IS_VALID_DIGITAL_PIN(pin) && (pin < 0x100)) return new VirtualPin(pin);
     if (pin < 0x100) return new ArduinoPin(pin);
     #ifdef EXPANDER_PCF8574
       uint8_t expanderNo = (pin >> 8) - 1;
@@ -188,6 +188,24 @@ void VirtualPin::digitalWrite(uint8_t value)
     assert(0);
   };
 
+
+  // https://learn.adafruit.com/memories-of-an-arduino/measuring-free-memory
+  #if !defined(ARDUINO_ARCH_ESP8266)
+    extern int * __brkval;
+  #endif
+
+  uint32_t lkankowski::freeMemory()
+  {
+    #if defined(ARDUINO_ARCH_ESP8266)
+      return ESP.getFreeHeap();
+    #elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+      int top;
+      return &top - __brkval;
+    #else
+      int top;
+      return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+    #endif
+  };
 
 #else
 

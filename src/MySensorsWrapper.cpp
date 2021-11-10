@@ -1,6 +1,5 @@
 #include <MySensorsWrapper.h>
 #ifdef ARDUINO
-  #define MY_GATEWAY_SERIAL
   #include <core/MySensorsCore.h>
 #endif
 
