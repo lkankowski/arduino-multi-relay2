@@ -174,6 +174,7 @@ void loop()
   if (gRelayService.isImpulsePending()) {
     for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
       if (gRelayService.impulseProcess(relayNum, loopStartMillis)) {
+        myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
         myMessage.setSensor(gRelayService.getSensorId(relayNum));
         send(myMessage.set(0));
       }
