@@ -97,77 +97,77 @@ int Configuration::getRelayNum(int sensorId) const
 };
 
 
-int Configuration::getRelayPin(size_t relayNum)
+int Configuration::getRelayPin(size_t relayNum) const
 {
   if (relayNum != _relayNumInBuf) loadRelayConfigFromPROGMEM(relayNum);
   return _relayConfigEntryBuf.relayPin;
 };
 
 
-uint8_t Configuration::getRelayDependsOn(size_t relayNum)
+uint8_t Configuration::getRelayDependsOn(size_t relayNum) const
 {
   if (relayNum != _relayNumInBuf) loadRelayConfigFromPROGMEM(relayNum);
   return _relayConfigEntryBuf.dependsOn;
 };
 
 
-const char * Configuration::getRelayDescription(size_t relayNum)
+const char * Configuration::getRelayDescription(size_t relayNum) const
 {
   if (relayNum != _relayNumInBuf) loadRelayConfigFromPROGMEM(relayNum);
   return _relayConfigEntryBuf.relayDescription;
 };
 
 
-int Configuration::getButtonPin(size_t buttonNum)
+int Configuration::getButtonPin(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonPin;
 };
 
 
-int Configuration::getButtonType(size_t buttonNum)
+int Configuration::getButtonType(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonType;
 };
 
 
-const char * Configuration::getButtonDescription(size_t buttonNum)
+const char * Configuration::getButtonDescription(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.buttonDescription;
 };
 
 
-int Configuration::getButtonClickAction(size_t buttonNum)
+int Configuration::getButtonClickAction(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.clickRelayId;
 };
 
 
-int Configuration::getButtonLongClickAction(size_t buttonNum)
+int Configuration::getButtonLongClickAction(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.longClickRelayId;
 };
 
 
-int Configuration::getButtonDoubleClickAction(size_t buttonNum)
+int Configuration::getButtonDoubleClickAction(size_t buttonNum) const
 {
   if (buttonNum != _buttonNumInBuf) loadButtonConfigFromPROGMEM(buttonNum);
   return _buttonConfigEntryBuf.doubleClickRelayId;
 };
 
 
-void Configuration::loadRelayConfigFromPROGMEM(size_t relayNum) 
+void Configuration::loadRelayConfigFromPROGMEM(size_t relayNum) const
 {
   PROGMEM_readAnything(&_relayConfig.cfg[relayNum], _relayConfigEntryBuf);
   _relayNumInBuf = relayNum;
 };
 
 
-void Configuration::loadButtonConfigFromPROGMEM(size_t buttonNum) 
+void Configuration::loadButtonConfigFromPROGMEM(size_t buttonNum) const
 {
   PROGMEM_readAnything(&_buttonConfig.cfg[buttonNum], _buttonConfigEntryBuf);
   _buttonNumInBuf = buttonNum;

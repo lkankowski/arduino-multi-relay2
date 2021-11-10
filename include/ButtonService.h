@@ -14,8 +14,8 @@ class ButtonService
 
     void attachPins();
     void checkEventsAndDoActions(unsigned long);
-    bool getRelayState(size_t);
-    void printDebug(size_t);
+    bool getRelayState(size_t) const;
+    void printDebug(size_t) const;
 
   private:
     Configuration & _configuration;

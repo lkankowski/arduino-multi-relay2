@@ -27,8 +27,8 @@ class RelayService : public ButtonCallbackInterface
     void processImpulse(unsigned long);
     void setImpulseInterval(unsigned long impulseInterval) { _impulseInterval = impulseInterval; };
     bool turnOffDependent(unsigned long);
-    inline const char * getDescription(int relayNum) { return _configuration.getRelayDescription(relayNum); };
-    void printDebug(int);
+    inline const char * getDescription(int relayNum) const { return _configuration.getRelayDescription(relayNum); };
+    void printDebug(int) const;
 
   private:
     RelayPtr * _relays;

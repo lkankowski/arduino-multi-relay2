@@ -166,7 +166,7 @@ bool RelayService::turnOffDependent(unsigned long millis)
 };
 
 
-void RelayService::printDebug(int relayNum)
+void RelayService::printDebug(int relayNum) const
 {
   Serial << F("## Relay ") << _configuration.getRelaySensorId(relayNum)
          << F(": state=") << _relays[relayNum]->getState()

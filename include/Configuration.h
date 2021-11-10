@@ -65,34 +65,34 @@ class Configuration
 
     int getRelayNum(int) const;
     inline size_t getRelaysCount() const { return _relayConfig.size; };
-    int getRelayPin(size_t relayNum);
+    int getRelayPin(size_t relayNum) const;
     inline uint8_t getRelayOptions(size_t relayNum) const { return _relayOptions[relayNum]; };
-    uint8_t getRelayDependsOn(size_t relayNum);
+    uint8_t getRelayDependsOn(size_t relayNum) const;
     inline int getRelaySensorId(size_t relayNum) const { return _relaySensorId[relayNum]; };
-    const char * getRelayDescription(size_t relayNum);
+    const char * getRelayDescription(size_t relayNum) const;
 
     inline size_t getButtonsCount() const { return _buttonConfig.size; };
-    int getButtonPin(size_t buttonNum);
-    int getButtonType(size_t buttonNum);
-    const char * getButtonDescription(size_t buttonNum);
-    int getButtonClickAction(size_t buttonNum);
-    int getButtonLongClickAction(size_t buttonNum);
-    int getButtonDoubleClickAction(size_t buttonNum);
+    int getButtonPin(size_t buttonNum) const;
+    int getButtonType(size_t buttonNum) const;
+    const char * getButtonDescription(size_t buttonNum) const;
+    int getButtonClickAction(size_t buttonNum) const;
+    int getButtonLongClickAction(size_t buttonNum) const;
+    int getButtonDoubleClickAction(size_t buttonNum) const;
     
   private:
-    void loadRelayConfigFromPROGMEM(size_t);
-    void loadButtonConfigFromPROGMEM(size_t);
+    void loadRelayConfigFromPROGMEM(size_t) const;
+    void loadButtonConfigFromPROGMEM(size_t) const;
 
     const RelayConfigRef & _relayConfig;
-    RelayConfigDef _relayConfigEntryBuf;
-    size_t _relayNumInBuf = -1;
+    mutable RelayConfigDef _relayConfigEntryBuf;
+    mutable size_t _relayNumInBuf = -1;
 
     uint8_t * _relaySensorId;
     uint8_t * _relayOptions;
 
     const ButtonConfigRef & _buttonConfig;
-    ButtonConfigDef _buttonConfigEntryBuf;
-    size_t _buttonNumInBuf = -1;
+    mutable ButtonConfigDef _buttonConfigEntryBuf;
+    mutable size_t _buttonNumInBuf = -1;
 
   #ifdef USE_EXPANDER
     const uint8_t * _expanderAddresses;

@@ -70,13 +70,13 @@ void ButtonService::checkEventsAndDoActions(unsigned long millis)
 };
 
 
-bool ButtonService::getRelayState(size_t buttonNum)
+bool ButtonService::getRelayState(size_t buttonNum) const
 {
   return _button[buttonNum]->getRelayState();
 };
 
 
-void ButtonService::printDebug(size_t buttonNum)
+void ButtonService::printDebug(size_t buttonNum) const
 {
   Serial << F("state=") << _button[buttonNum]->getState() << "; " << _configuration.getButtonDescription(buttonNum) << "\n";
 };

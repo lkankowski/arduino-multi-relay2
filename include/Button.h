@@ -12,8 +12,8 @@ class ButtonInterface
     virtual ~ButtonInterface();
 
     virtual int checkEvent(unsigned long) = 0;
-    virtual bool isToogle() = 0;
-    virtual bool getRelayState() = 0;
+    virtual bool isToogle() const = 0;
+    virtual bool getRelayState() const = 0;
 
     void attachPin();
     bool getState() const { return _switch->getState(); };
@@ -61,8 +61,8 @@ class MonoStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool isToogle() override { return true; };
-    bool getRelayState() override { return false; };
+    bool isToogle() const override { return true; };
+    bool getRelayState() const override { return false; };
     static void clickTriggerWhenPressed(bool);
 
   protected:
@@ -81,8 +81,8 @@ class BiStableButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool isToogle() override { return true; };
-    bool getRelayState() override { return false; };
+    bool isToogle() const override { return true; };
+    bool getRelayState() const override { return false; };
 
   protected:
     BiStableButton(HardwareSwitchInterface *, int, int);
@@ -98,8 +98,8 @@ class DingDongButton : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool isToogle() override { return false; };
-    bool getRelayState() override { return _switch->getState(); };
+    bool isToogle() const override { return false; };
+    bool getRelayState() const override { return _switch->getState(); };
 
   protected:
     DingDongButton(HardwareSwitchInterface *, int);
@@ -113,8 +113,8 @@ class ReedSwitch : public ButtonInterface
 
   public:
     int checkEvent(unsigned long) override;
-    bool isToogle() override { return false; };
-    bool getRelayState() override { return ! _switch->getState(); };
+    bool isToogle() const override { return false; };
+    bool getRelayState() const override { return ! _switch->getState(); };
 
   protected:
     ReedSwitch(HardwareSwitchInterface *, int);
