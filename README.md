@@ -1,10 +1,9 @@
-
-* [About] (#About)
-* [Get Started] (#Get-Started)
-* [Configuration] (#Configuration)
-* [Debugging] (#Debugging)
-* [Expander] (#Expander)
-* [Troubleshoting] (#Troubleshoting)
+* [About](#about)
+* [Get Started](#get-started)
+* [Configuration](#configuration)
+* [Debugging](#debugging)
+* [Expander](#expander)
+* [Troubleshoting](#troubleshoting)
 
 
 # About
