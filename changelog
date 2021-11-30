@@ -1,5 +1,40 @@
-## 2.2.1
-reporting REED_SWITCH as S_DOOR in MySensors
-## 2.2.0
-Without sending V_ARMED
-Support MCP23017
+# 2.3.2 - Minor fixes
+- improve Virtual pins
+- typos fixes and revert remove "xstr" macro
+- add timestamp to default serial monitor output
+
+# 2.3.1 - Fixes and cleanup after release 2.3.0 Latest
+- cleanup - remove some commented code
+- add some inline directive
+- increase relay and button description to 30 characters
+- updated documentation (especially PROGMEM directive)
+- fixed expander compilation errors
+- added expander support in Configuration class
+- added unit tests for Configuration class
+- added compilation option in platformio.ini to increase serial buffer when having communication problems (SERIAL_RX_BUFFER_SIZE)
+
+# 2.3.0 - Big architecture refactoring and new functionality - dependent relays
+New functionality:
+- Dependent relays and new configuration option "dependsOn"
+Technical changes:
+- Completely new software architecture to separate responsibility and add hardware abstraction for unit testing:
+  - New class ButtonService
+  - New class RelayService
+  - New class Switch (hardware layer for buttons)
+  - Separate class for every button type
+  - Arduino abstraction layer - Arduino specific items located in ArduinoAbstract.h/cpp files
+    - Common Pins interface including expander implementation
+  - new class Eeprom - EEPROM abstraction for testing
+  - new class Configuration
+- Unit testing in native mode (on local PC) - thanks to Arduino abstraction/mock most code can be unit tested
+- Ability to validate configuration in native mode
+- Removed Bounce2 library
+- Configuration and all strings moved to flash memory - free SRAM memory
+- Removed all usages of String class (less memory consumption)
+- All serial output using C++ streams ("Serial << …")
+
+# 2.2.1 - Sensor reporting
+- reporting REED_SWITCH as S_DOOR in MySensors
+# 2.2.0
+- Without sending V_ARMED
+- Support MCP23017
