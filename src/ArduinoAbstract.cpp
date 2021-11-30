@@ -13,6 +13,12 @@ PinCreator::PinCreator()
 };
 
 
+PinCreator::~PinCreator()
+{
+  _instance = nullptr;
+};
+
+
 // static
 PinCreator * PinCreator::instance()
 {
@@ -126,23 +132,7 @@ void VirtualPin::digitalWrite(uint8_t value)
   #endif
 
 
-  PinInterface * PinCreator::create(int pin)
-  {
-    if (!IS_VALID_DIGITAL_PIN(pin) && (pin < 0x100)) return new VirtualPin(pin);
-    if (pin < 0x100) return new ArduinoPin(pin);
     #ifdef EXPANDER_PCF8574
-      uint8_t expanderNo = (pin >> 8) - 1;
-      return new PCF8574Pin(pin&0xff, _expanders[expanderNo]);
-    #endif
-    #ifdef EXPANDER_MCP23017
-      uint8_t expanderNo = (pin >> 8) - 1;
-      return new MCP23017Pin(pin&0xff, _expanders[expanderNo]);
-    #endif
-    return nullptr;
-  };
-
-
-  #ifdef EXPANDER_PCF8574
   PinCreator::PinCreator(PCF8574 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders)
     : _expanders(expander)
     , _expanderAddresses(expanderAddresses)
@@ -162,6 +152,22 @@ void VirtualPin::digitalWrite(uint8_t value)
     _instance = this;
   };
   #endif
+
+
+  PinInterface * PinCreator::create(int pin)
+  {
+    if (!IS_VALID_DIGITAL_PIN(pin) && (pin < 0x100)) return new VirtualPin(pin);
+    if (pin < 0x100) return new ArduinoPin(pin);
+    #ifdef EXPANDER_PCF8574
+      uint8_t expanderNo = (pin >> 8) - 1;
+      return new PCF8574Pin(pin&0xff, _expanders[expanderNo]);
+    #endif
+    #ifdef EXPANDER_MCP23017
+      uint8_t expanderNo = (pin >> 8) - 1;
+      return new MCP23017Pin(pin&0xff, _expanders[expanderNo]);
+    #endif
+    return nullptr;
+  };
 
 
   #ifdef USE_EXPANDER
@@ -260,9 +266,9 @@ void VirtualPin::digitalWrite(uint8_t value)
   SerialClass Serial;
 
 
-void lkankowski::haltSystem()
-{
-};
+  void lkankowski::haltSystem()
+  {
+  };
 
 
 #endif

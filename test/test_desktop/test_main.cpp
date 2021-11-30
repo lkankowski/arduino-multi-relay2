@@ -12,13 +12,24 @@
 #include <typeinfo>
 
 
-//#define USE_EXPANDER
+// #define USE_EXPANDER
+
+#if defined(BOARD_TARGET_ATMEGA2560)
+  #define NUM_DIGITAL_PINS (70)
+  #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+#elif defined (BOARD_TARGET_ATMEGA328)
+  #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+#elif defined (BOARD_TARGET_ESP8266)
+  #define IS_VALID_DIGITAL_PIN(pin) (((pin >= 0) && (pin < NUM_DIGITAL_PINS)) && !isFlashInterfacePin(pin))
+#endif
 
 using namespace std;
 using namespace lkankowski;
 
 
 #include <config.h>
+
+PinCreator * gPinCreator;
 
 const RelayConfigRef gRelayConfigRef = {gRelayConfig, sizeof(gRelayConfig) / sizeof(RelayConfigDef)};
 const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) / sizeof(ButtonConfigDef)};
@@ -30,8 +41,21 @@ RelayService gRelayService(gConfiguration, gEeprom, gMySensorsWrapper);
 
 void setUp(void)
 {
+  //cout << "setUp()" << endl;
   ButtonInterface::setEventIntervals(350, 800);
+  #ifdef USE_EXPANDER
+    gPinCreator = new PinCreator(gExpander, gExpanderAddresses, sizeof(gExpanderAddresses));
+  #else
+    gPinCreator = new PinCreator;
+  #endif
 };
+
+
+// void tearDown(void)
+// {
+//   //cout << "tearDown()" << endl;
+//   delete gPinCreator;
+// };
 
 
 void test_config_relays()
@@ -50,24 +74,14 @@ void test_config_relays()
     for (int relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin >= 0) { // exclude virtual relays
-        if (pin & 0xff00) { //exclude expander pins
-          TEST_ASSERT_LESS_THAN_MESSAGE(NUM_DIGITAL_PINS,
-                                        pin,
-                                        (string("Pin number is greater than number of digital pins: ") + to_string(pin)).c_str());
+        if (pin < 0x100) { //exclude expander pins
+          TEST_ASSERT_LESS_THAN_MESSAGE(NUM_DIGITAL_PINS, pin, "Pin number is greater than number of digital pins");
         }
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_RX,
-                                      pin,
-                                      (string("Pin conflicts with default RX pin: ") + to_string(pin)).c_str());
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_TX,
-                                      pin,
-                                      (string("Pin conflicts with default TX pin: ") + to_string(pin)).c_str());
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_RX, pin, "Pin conflicts with default RX pin");
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_TX, pin, "Pin conflicts with default TX pin");
         #if defined(USE_EXPANDER)
-          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SDA,
-                                        pin,
-                                        (string("Pin conflicts with default expander SDA pin: ") + to_string(pin)).c_str());
-          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SCL,
-                                        pin,
-                                        (string("Pin conflicts with default expander SCL pin: ") + to_string(pin)).c_str());
+          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SDA, pin, "Pin conflicts with default expander SDA pin");
+          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SCL, pin, "Pin conflicts with default expander SCL pin");
           if (pin & 0xff00) {
             TEST_ASSERT_MESSAGE((((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)),
                                 (string("Configuration failed - expander no or number of pins out of range for button: ") + to_string(buttonNum)).c_str());
