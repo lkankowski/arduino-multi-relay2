@@ -8,7 +8,7 @@ on:
   push:
     branches: [ master, develop ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, develop ]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -48,4 +48,6 @@ jobs:
       - name: Configure Multi-Relay
         run: cp include/config.h.sample include/config.h
       - name: PlatformIO - run build
-        run: pio run -e mega2560 -e native
+        run: pio run -e mega2560 -e nano328 -e native
+      - name: PlatformIO - run test
+        run: pio test -e native
