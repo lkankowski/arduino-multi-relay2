@@ -26,6 +26,7 @@ using namespace lkankowski;
 #endif
 
 int gTurnOffDependentsCounter = 2000;
+unsigned int gLoopButtonNum = 0;
 
 #ifdef DEBUG_STATS
   bool debugStatsOn = false;
@@ -181,12 +182,11 @@ void loop()
     }
   }
 
-  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
-    
-    int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
+  for (size_t counter = 0; counter < 10; counter++) {
+    int relayNum = gButtonService.checkEvent(gLoopButtonNum, loopStartMillis);
     if (relayNum > -1) {
       // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
-      bool relayState = gButtonService.getRelayState(buttonNum, gRelayService.getState(relayNum));
+      bool relayState = gButtonService.getRelayState(gLoopButtonNum, gRelayService.getState(relayNum));
 
       #ifdef IGNORE_BUTTONS_START_MS
         if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
@@ -200,6 +200,8 @@ void loop()
         }
       #endif
     }
+    gLoopButtonNum++;
+    if (gLoopButtonNum >= gConfiguration.getButtonsCount()) gLoopButtonNum = 0;
   }
 
   #ifdef DEBUG_STATS
