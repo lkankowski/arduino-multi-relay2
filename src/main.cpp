@@ -273,7 +273,7 @@ void receive(const MyMessage &message)
   }
 };
 
-#else
+#else  // !ARDUINO
 
 #include <ArduinoAbstract.h>
 #include <EepromAbstract.h>

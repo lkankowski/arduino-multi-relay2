@@ -1,3 +1,11 @@
+* [About](#about)
+* [Get Started](#get-started)
+* [Configuration](#configuration)
+* [Debugging](#debugging)
+* [Expander](#expander)
+* [Troubleshoting](#troubleshoting)
+
+
 # About
 Arduino program to handle relays and control them using switches with support for double-click and long-press. Integration with home automation systems is possible through MySensors integration.
 Configuration is very simple - one line for a single relay and one line for single switch
