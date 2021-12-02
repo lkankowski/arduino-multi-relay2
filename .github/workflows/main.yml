@@ -6,7 +6,7 @@ name: PlatformIO CI
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [ master, develop ]
   pull_request:
     branches: [ master ]
 
@@ -45,5 +45,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade platformio
-      - name: Run PlatformIO
+      - name: Configure Multi-Relay
+        run: cp include/config.h.sample include/config.h
+      - name: PlatformIO - run build
         run: pio run -e mega2560 -e native
