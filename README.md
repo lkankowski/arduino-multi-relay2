@@ -1,7 +1,7 @@
 # Multi-Relay 2
 
-![Stable build Status](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=master)
-![Develop build Status](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=develop)
+Stable build Status ![](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=master)
+Develop build Status ![](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=develop)
 
 * [About](#about)
 * [Get Started](#get-started)
