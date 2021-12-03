@@ -52,7 +52,7 @@ jobs:
         run: cp include/config.h.sample include/config.h
       
       - name: PlatformIO - run build all env
-        run: pio run `grep -E '^\[env:' platformio.ini | sed -E 's/^\[env:(.*)\]/-e \1/' | paste -sd ' ' -`
+        run: pio run `grep -Eo '^\[env:[a-z0-9\-]*' platformio.ini | cut -c6- | sed 's/^/-e /' | paste -sd ' ' -`
         
       - name: PlatformIO - run build with DEBUG_*
         run: pio run -e mega2560-serial
