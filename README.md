@@ -1,3 +1,8 @@
+# Multi-Relay 2
+
+![Stable build Status](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=master)
+![Develop build Status](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=develop)
+
 * [About](#about)
 * [Get Started](#get-started)
 * [Configuration](#configuration)
@@ -5,40 +10,42 @@
 * [Expander](#expander)
 * [Troubleshoting](#troubleshoting)
 
-
-# About
+## About
 Arduino program to handle relays and control them using switches with support for double-click and long-press. Integration with home automation systems is possible through MySensors integration.
 Configuration is very simple - one line for a single relay and one line for single switch
 Every switch support debouncing, multiple types of switches and additional actions like double-click and long-press - everything in a single line of configuration. Relays can be configured as LOW/HIGH level trigger, startup state ON or OFF and impulse type.
 One relay can have one or more switches, or not at all if you want to control it only by home automation system.
 MQTT...
 
-# Get Started
+## Get Started
 
-## Supported platforms and hardware
-Arduino mega2560 and other AVR ATmega family
-ESP8266
-MY_GATEWAY_ENC28J60
-MY_GATEWAY_W5100
-expanders xxx described later in this doc.
+### Supported platforms and hardware
+* Arduino Mega2560 and other AVR ATmega family
+* ESP8266
+* Ethernet
+  * MY_GATEWAY_ENC28J60
+  * MY_GATEWAY_W5100
+* expanders (described later in this doc)
+  * MCP23017
+  * PCF8574
 
-## Download
+### Download
 Most convinient is to clone the repo, but you have to have installed `git`:
 ```
 git clone https://github.com/lkankowski/arduino-multi-relay2.git
 ```
 You can also download zip file.
 
-## Create config file
+### Create config file
 Copy file "config.h.sample" into "config.h". There is sample configuration you need to examine and customize for your own needs.
 
-## Build
+### Build
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
 By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
 Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
 
 
-## Updating
+### Updating
 If you have 'git', just type `git pull`. Otherwise download zip file and extract to new directory - remember, to copy 'config.h'.
 It is also convinient to have 'config.h' someware else, then you can use symbolic link. In Windows you have 2 options:
 
@@ -53,7 +60,7 @@ Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-comma
 
 # Configuration
 
-## Main config file "config.h"
+### Main config file "config.h"
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
   {sensor id, relay pin, relay options, relay dependOn, relay description}
@@ -87,7 +94,7 @@ Params description:
 * button description - debug only information, max. 30 chars, can be empty ("")
 
 
-## Example config with REED_SWITCH
+### Example config with REED_SWITCH
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
   {26, 31, RELAY_TRIGGER_HIGH, -1, "Garage Door"},
@@ -101,7 +108,7 @@ const ButtonConfigDef gButtonConfig[] PROGMEM = {
 In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home Assistant this relay can be found in entities as binary_sensor.multi_relay_0_26.
 
 
-## Dependent relays
+### Dependent relays
 The "dependOn" option in relays configuration is intended for turning ON and OFF power supplies or simple scenes.
 For example, you have 12V power supply and two 12V LED lights:
 ```
@@ -125,7 +132,7 @@ In this variant, when you turn on _Hall light_, also _Stairs light_ will turn on
 but when you turn off _Hall light_, _Stairs light_ will remain on.
 
 
-## Additional config
+### Additional config
 Optional configuration only if you want to customize the script.
 
 MONO_STABLE switches can trigger ralay when switch is pressed (LOW) or when switch is released (HIGH):
@@ -159,7 +166,7 @@ const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 ```
 
 
-# Debugging
+## Debugging
 In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the beginning) some `build_flags`:
 * `DEBUG_STATS=1000` - time statistics can be printed on serial, when they are triggered via appropriate MySensors command - read more in MySensors commands sections
 * `DEBUG_COMMUNICATION` - show some debug information about received MySensors commands on serial
@@ -167,10 +174,10 @@ In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the
 * `DEBUG_STARTUP` - detaled information about configuration parameters. Usefull when you want report some problems with sketch.
 
 
-# Expander
+## Expander
 Only one expander library at a time is supported.
 
-## PCF8574
+### PCF8574
 Support of PCF8574 expander is provided by the library `https://github.com/skywodd/pcf8574_arduino_library`.
 Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
 
@@ -178,7 +185,7 @@ In a `platformio.ini` file in section [env] uncomment:
 * `-D EXPANDER_PCF8574` in `build_flags`,
 * `https://github.com/skywodd/pcf8574_arduino_library` in `lib_deps`.
 
-## MCP23017
+### MCP23017
 https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
 
 In a `platformio.ini` file in section [evv] uncomment expander library in `lib_deps_builtin`:
@@ -187,7 +194,7 @@ adafruit/Adafruit MCP23017 Arduino Library @ ^1.2.0
 ```
 and `EXPANDER_MCP23017` in `build_flags`.
 
-## Configuration
+### Configuration
 
 Configure expander id in `config.h` file:
 ```
@@ -214,17 +221,17 @@ To simplify using expanders, there is "E(a,b)" macro:
 E(0,0) - first pin on first expander
 ```
 
-## Relay config example
+### Relay config example
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
   {1, E(0,3), RELAY_TRIGGER_LOW, -1, "RELAY 1"}
 };
 ```
 
-# Troubleshoting
+## Troubleshoting
 If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
 
-# MySensors special commands
+## MySensors special commands
 Show debug stats
 ```
 0;255;1;0;24;1

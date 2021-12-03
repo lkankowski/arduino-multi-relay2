@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: PlatformIO CI
+name: Build & Test ${{ github.ref_name }}
 
 # Controls when the workflow will run
 on:
@@ -39,15 +39,25 @@ jobs:
         with:
           path: ~/.platformio
           key: ${{ runner.os }}-${{ hashFiles('**/lockfiles') }}
+      
       - name: Set up Python
         uses: actions/setup-python@v2
+      
       - name: Install PlatformIO
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade platformio
+      
       - name: Configure Multi-Relay
         run: cp include/config.h.sample include/config.h
-      - name: PlatformIO - run build
-        run: pio run -e mega2560 -e nano328 -e native
+      
+      - name: PlatformIO - run build all env
+        run: pio run `grep -E '^\[env:' platformio.ini | sed -E 's/^\[env:(.*)\]/-e \1/'`
+        
+      - name: PlatformIO - run build with DEBUG_*
+        run: pio run -e mega2560-serial
+        env:
+          PLATFORMIO_BUILD_FLAGS: -D DEBUG_COMMUNICATION -D DEBUG_ACTION -D DEBUG_STARTUP -D IGNORE_BUTTONS_START_MS=2000
+      
       - name: PlatformIO - run test
         run: pio test -e native
