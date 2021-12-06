@@ -52,7 +52,7 @@ const ButtonConfigDef gButtonConfig[] PROGMEM = {
 #define MY_WIFI_PASSWORD "<YOUR WIFI PASSWORD>"
 
 // Hostname for the WiFi Client. This is the hostname passed to the DHCP server if not static.
-#define MY_HOSTNAME "ESP8266_MULTI_RELAY"
+#define MY_HOSTNAME "MULTI_RELAY_2"
 
 // Enable MY_IP_ADDRESS here if you want a static ip address (no DHCP)
 //#define MY_IP_ADDRESS 192,168,178,87
@@ -61,26 +61,33 @@ const ButtonConfigDef gButtonConfig[] PROGMEM = {
 //#define MY_IP_GATEWAY_ADDRESS 192,168,178,1
 //#define MY_IP_SUBNET_ADDRESS 255,255,255,0
 
-
-// Node's subscribe and publish topic prefix
-#define MY_MQTT_PUBLISH_TOPIC_PREFIX "multi-relay-test/out"
-#define MY_MQTT_SUBSCRIBE_TOPIC_PREFIX "multi-relay-test/in"
-
-// MQTT client id
-#define MY_MQTT_CLIENT_ID "multi-relay-2"
-
-// Enable these if your MQTT broker requires username/password
-//#define MY_MQTT_USER "<YOUR MQTT USERNAME>"
-//#define MY_MQTT_PASSWORD "<YOUR MQTT PASSWORD>"
-
-// MQTT broker ip address
-#define MY_CONTROLLER_IP_ADDRESS 192,168,100,100
-
-// MQTT broker if using URL instead of ip address
-// #define MY_CONTROLLER_URL_ADDRESS "test.mosquitto.org"
-
-// MQTT broker port
-#define MY_PORT 1883
-
 // MAC address can be anything you want but should be unique on your network
 //#define MY_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+
+// Enable MQTT communication (must be commented out for serial and TCP/UDP communication)
+//#define MY_GATEWAY_MQTT_CLIENT
+
+#ifdef MY_GATEWAY_MQTT_CLIENT
+  // Node's subscribe and publish topic prefix
+  #define MY_MQTT_PUBLISH_TOPIC_PREFIX "multi-relay/out"
+  #define MY_MQTT_SUBSCRIBE_TOPIC_PREFIX "multi-relay/in"
+
+  // MQTT client id
+  #define MY_MQTT_CLIENT_ID "multi-relay-2"
+
+  // Enable these if your MQTT broker requires username/password
+  //#define MY_MQTT_USER "<YOUR MQTT USERNAME>"
+  //#define MY_MQTT_PASSWORD "<YOUR MQTT PASSWORD>"
+
+  // MQTT broker ip address
+  #define MY_CONTROLLER_IP_ADDRESS 192,168,178,17
+
+  // MQTT broker if using URL instead of ip address
+  // #define MY_CONTROLLER_URL_ADDRESS "test.mosquitto.org"
+
+  // MQTT broker port (default 1883)
+  //#define MY_PORT 1883
+#else
+  // The Ethernet TCP/UDP port to open on controller or gateway (default 5003).
+  //#define MY_PORT 5003
+#endif

@@ -1,6 +1,6 @@
 # Multi-Relay 2
 
-Stable build Status ![](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=master)
+Stable build Status ![](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=master), 
 Develop build Status ![](https://github.com/lkankowski/arduino-multi-relay2/actions/workflows/main.yml/badge.svg?branch=develop)
 
 * [About](#about)
@@ -11,23 +11,24 @@ Develop build Status ![](https://github.com/lkankowski/arduino-multi-relay2/acti
 * [Troubleshoting](#troubleshoting)
 
 ## About
-Arduino program to handle relays and control them using switches with support for double-click and long-press. Integration with home automation systems is possible through MySensors integration.
-Configuration is very simple - one line for a single relay and one line for single switch
-Every switch support debouncing, multiple types of switches and additional actions like double-click and long-press - everything in a single line of configuration. Relays can be configured as LOW/HIGH level trigger, startup state ON or OFF and impulse type.
+Arduino program to handle relays and control them using switches with support for double-click and long-press. Integration with home automation systems is possible through MySensors integration over serial, LAN or MQTT.
+Configuration is very simple - one line for a single relay and one line for single switch.
+Every switch support debouncing, multiple types and additional actions like double-click and long-press - everything in a single line of configuration. Relays can be configured as LOW/HIGH level trigger, startup state ON or OFF and impulse type.
 One relay can have one or more switches, or not at all if you want to control it only by home automation system.
-MQTT...
-
-## Get Started
 
 ### Supported platforms and hardware
 * Arduino Mega2560 and other AVR ATmega family
 * ESP8266
-* Ethernet
-  * MY_GATEWAY_ENC28J60
-  * MY_GATEWAY_W5100
+* ESP32 - Experimental! Tests with LAN worked fine, but had no luck with MQTT
+* Ethernet (LAN or MQTT)
+  * W5100
+  * ENC28J60
 * expanders (described later in this doc)
   * MCP23017
   * PCF8574
+
+
+## Get Started
 
 ### Download
 Most convinient is to clone the repo, but you have to have installed `git`:
@@ -41,12 +42,12 @@ Copy file "config.h.sample" into "config.h". There is sample configuration you n
 
 ### Build
 You need PlatformIO - it is free and you can get it here https://platformio.org/platformio-ide. Arduino IDE is not supported.
-By default sketch is built for Arduino Mega 2560. Build options can be customized in `platformio.ini` - more information in separate sections.
+By default sketch is built for Arduino Mega 2560, but you choose environment that suits your needs.
+Build options can be customized in `platformio.ini` - more information in separate sections.
 Remote upload (ie. Arduino connected to Raspberry PI) is supported. For more information read https://docs.platformio.org/en/latest/core/userguide/remote/cmd_agent.html.
 
-
 ### Updating
-If you have 'git', just type `git pull`. Otherwise download zip file and extract to new directory - remember, to copy 'config.h'.
+If you have 'git', just type `git pull`. Otherwise download zip file and extract to new directory - remember, to backup 'config.h'.
 It is also convinient to have 'config.h' someware else, then you can use symbolic link. In Windows you have 2 options:
 
 CMD:
@@ -56,9 +57,9 @@ mklink "<your local config directory>\config.h" "<your repo directory>\include\c
 or PowerShell (assuming that you run in main repo directory):
 ```
 Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\include\config.h' -ItemType SymbolicLink -Value '<your local config directory>\config.h'"
+```
 
-
-# Configuration
+## Configuration
 
 ### Main config file "config.h"
 ```
@@ -73,6 +74,7 @@ Params description:
   * RELAY_TRIGGER_LOW or RELAY_TRIGGER_HIGH - required, trigger level
   * RELAY_STARTUP_ON or RELAY_STARTUP_OFF - optional, startup state
   * RELAY_IMPULSE - optional, relay is turned on only for short period of time (defined in constant RELAY_IMPULSE_INTERVAL, 250ms by default), ignored for DING_DONG and REED_SWITCH buttons
+  * RELAY_INDEPENDENT - described in (#dependent-relays)
 * relay dependOn - ID of relay that needs to be turned on before this one
 * relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation System, max. 30 chars, can be empty ("")
 
@@ -93,7 +95,6 @@ Params description:
 * double-click relay id - sensor id used in relay configuration, -1 when not used, ignored for DING_DONG/REED_SWITCH
 * button description - debug only information, max. 30 chars, can be empty ("")
 
-
 ### Example config with REED_SWITCH
 ```
 const RelayConfigDef gRelayConfig[] PROGMEM = {
@@ -105,8 +106,7 @@ const ButtonConfigDef gButtonConfig[] PROGMEM = {
   ...
 };
 ```
-In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home Assistant this relay can be found in entities as binary_sensor.multi_relay_0_26.
-
+In this case relay 26 is always reported throught as S_DOOR sensor, i.e. in Home Assistant this relay can be found in entities as binary_sensor.
 
 ### Dependent relays
 The "dependOn" option in relays configuration is intended for turning ON and OFF power supplies or simple scenes.
@@ -165,6 +165,34 @@ Sketch description reported via MySensors to Home Automation System:
 const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 ```
 
+### Network Configuration
+You can use network connection (Ethernet or WiFi) based on MySensors capabilities (ESP8266, ESP32, W5100, W5500, ENC28J60).
+This needs some additional configuration in `config.h`:
+* `#define MY_WIFI_SSID "<YOUR WIFI NAME>"` - WiFi SSID in case of ESP8266/ESP32
+* `#define MY_WIFI_PASSWORD "<YOUR WIFI PASSWORD>"` - WiFi password in case of ESP8266/ESP32
+* `#define MY_HOSTNAME "MULTI_RELAY_2"`
+* `#define MY_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED`
+* In case of static IP address (no DHCP) you have to define following parameters:
+  * `#define MY_IP_ADDRESS 192,168,178,87` - IP address of the device
+  * `#define MY_IP_GATEWAY_ADDRESS 192,168,178,1` - IP address of your router
+  * `#define MY_IP_SUBNET_ADDRESS 255,255,255,0` - local network mask
+* `#define MY_PORT 5003` - if not using MQTT, MySensors gateway will listen on this port (if using default 5003 you dont need this in config.h)
+* `#define MY_USE_UDP` - if not using MQTT, you can choose UDP (default is TCP)
+
+This are still experimental options and waiting for contribution with working config.
+
+### MQTT Configuration
+* `#define MY_GATEWAY_MQTT_CLIENT` - enable MySensors MQTT support
+* `#define MY_MQTT_PUBLISH_TOPIC_PREFIX "multi-relay/out"` - gateway will send events to this topic
+* `#define MY_MQTT_SUBSCRIBE_TOPIC_PREFIX "multi-relay/in"` - gateway will listen for commands on this topic
+* `#define MY_MQTT_CLIENT_ID "multi-relay-2"` - client id when connecting to MQTT broker
+* `#define MY_CONTROLLER_IP_ADDRESS 192,168,178,17` - MQTT broker IP address
+* `#define MY_CONTROLLER_URL_ADDRESS "test.mosquitto.org"` - MQTT broker URL instead of ip address
+* `#define MY_PORT 1883` - MQTT broker port
+* `#define MY_MQTT_USER "<YOUR MQTT USERNAME>"` - user name, if your MQTT broker requires authentication
+* `#define MY_MQTT_PASSWORD "<YOUR MQTT PASSWORD>"` - user password, if your MQTT broker requires authentication
+* `#define MY_NODE_ID 1` - may be required (need tests)
+
 
 ## Debugging
 In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the beginning) some `build_flags`:
@@ -173,29 +201,23 @@ In a `platformio.ini` file in section [env] you can uncomment (remove ";" at the
 * `DEBUG_ACTION` - detailed information about button actions on serial
 * `DEBUG_STARTUP` - detaled information about configuration parameters. Usefull when you want report some problems with sketch.
 
-
 ## Expander
+Expanders alow you to have more GPIO pins over I2C protocol. On a single I2C data line you can connect one or more expanders.
+It is recomended to use expanders only for relays, because they are much slower than internal GPIO, and switches are checked all the time.
 Only one expander library at a time is supported.
+To build expander version just select appropriate `env` with sufix `pcf` or `mcp`.
 
 ### PCF8574
-Support of PCF8574 expander is provided by the library `https://github.com/skywodd/pcf8574_arduino_library`.
-Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
-
-In a `platformio.ini` file in section [env] uncomment:
-* `-D EXPANDER_PCF8574` in `build_flags`,
-* `https://github.com/skywodd/pcf8574_arduino_library` in `lib_deps`.
+Popular expander with additional 16 GPIO.
+* Library `https://github.com/skywodd/pcf8574_arduino_library`.
+  Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
 
 ### MCP23017
-https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
+Popular expander with additional 16 GPIO.
+* Library: https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library
 
-In a `platformio.ini` file in section [evv] uncomment expander library in `lib_deps_builtin`:
-```
-adafruit/Adafruit MCP23017 Arduino Library @ ^1.2.0
-```
-and `EXPANDER_MCP23017` in `build_flags`.
 
 ### Configuration
-
 Configure expander id in `config.h` file:
 ```
 const uint8_t expanderAddresses[] = {0x20}; //PCF8574

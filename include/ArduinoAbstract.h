@@ -12,6 +12,12 @@
     #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
   #elif defined (ARDUINO_ARCH_ESP8266)
     #define IS_VALID_DIGITAL_PIN(pin) (((pin >= 0) && (pin < NUM_DIGITAL_PINS)) && !isFlashInterfacePin(pin))
+  #elif defined (ARDUINO_ARCH_ESP32)
+    #define isFlashInterfacePin(pin)  ((pin) >= 6 && (pin) <= 11)
+    #define IS_VALID_DIGITAL_PIN(pin) (digitalPinIsValid(pin) && !isFlashInterfacePin(pin) && \
+                                       ((pin) != 20) && ((pin) != 37) && ((pin) != 38))
+                                       //((pin) != 24) && !(((pin) >= 28) && (pin) <= 31) // already excluded in digitalPinIsValid()
+                                       
   #endif
 
   #if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
