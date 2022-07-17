@@ -152,15 +152,15 @@ and `EXPANDER_MCP23017` in `build_flags`.
 
 Configure expander id in `config.h` file:
 ```
-const uint8_t expanderAddresses[] = {0x20}; //PCF8574
+const uint8_t gExpanderAddresses[] = {0x20}; //PCF8574
 ```
 or MCP23017:
 ```
-const uint8_t expanderAddresses[] = {0}; //MCP23017
+const uint8_t gExpanderAddresses[] = {0}; //MCP23017
 ```
 For multiple expanders use different id's:
 ```
-const uint8_t expanderAddresses[] = {0, 1, 2}; //MCP23017
+const uint8_t gExpanderAddresses[] = {0, 1, 2}; //MCP23017
 ```
 
 From now you can use expander pins in configuration of realays and buttons. To recognize expander pin, numbers start from 0x0100 and have special meaning:
