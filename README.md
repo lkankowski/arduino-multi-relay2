@@ -251,7 +251,9 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 ```
 
 ## Troubleshoting
-If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
+1. If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
+
+2. Relays randomly turn on/off on startup - one reason could be eeprom memory corruption (it has limited number of writes). As a solution you can change eeprom area with `EEPROM_OFFSET` build flag (i.e. `-D EEPROM_OFFSET=100`) .
 
 ## MySensors special commands
 Show debug stats

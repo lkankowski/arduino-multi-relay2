@@ -1,3 +1,15 @@
+# 2.4.0
+
+New features:
+- Dependent relays
+- Additional architectures: ESP8266, ESP32 (experimental)
+- Ethernet (LAN or MQTT) with W5100 or ENC28J60
+- Add multiple hardware combinations to platformio.ini so the user doesn't need to customize it so often
+
+Improvements:
+- Change button logic to be more independent from relays
+- Create wrapper for MySensors dependency so it can be better tested
+
 # 2.3.2 - Minor fixes
 - improve Virtual pins
 - typos fixes and revert remove "xstr" macro
@@ -16,6 +28,7 @@
 # 2.3.0 - Big architecture refactoring and new functionality - dependent relays
 New functionality:
 - Dependent relays and new configuration option "dependsOn"
+
 Technical changes:
 - Completely new software architecture to separate responsibility and add hardware abstraction for unit testing:
   - New class ButtonService
@@ -35,6 +48,7 @@ Technical changes:
 
 # 2.2.1 - Sensor reporting
 - reporting REED_SWITCH as S_DOOR in MySensors
+
 # 2.2.0
 - Without sending V_ARMED
 - Support MCP23017
