@@ -12,7 +12,9 @@ namespace lkankowski {
 
 const uint8_t RELAY_STARTUP_MASK = RELAY_STARTUP_ON | RELAY_STARTUP_OFF;
 
-#define RELAY_STATE_STORAGE 1
+#ifndef RELAY_STATE_STORAGE
+  #define RELAY_STATE_STORAGE 1
+#endif
 
 class RelayService : public ButtonCallbackInterface
 {

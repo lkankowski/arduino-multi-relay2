@@ -208,7 +208,7 @@ Only one expander library at a time is supported.
 To build expander version just select appropriate `env` with sufix `pcf` or `mcp`.
 
 ### PCF8574
-Popular expander with additional 16 GPIO.
+Popular expander with additional 8 GPIO.
 * Library `https://github.com/skywodd/pcf8574_arduino_library`.
   Basic information about expander and library you can find here - https://youtu.be/JNmVREucfyc (PL, library in description).
 
@@ -253,7 +253,8 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 ## Troubleshoting
 1. If you have problems with unstable relay or button states after startup, uncomment `-D IGNORE_BUTTONS_START_MS=2000` in your `platformio.ini`.
 
-2. Relays randomly turn on/off on startup - one reason could be eeprom memory corruption (it has limited number of writes). As a solution you can change eeprom area with `EEPROM_OFFSET` build flag (i.e. `-D EEPROM_OFFSET=100`) .
+2. Relays randomly turn on/off on startup - one reason could be eeprom memory corruption (it has limited number of writes).
+As a solution you can change eeprom area with `EEPROM_OFFSET` build flag (i.e. `-D EEPROM_OFFSET=100`).
 
 ## MySensors special commands
 Show debug stats

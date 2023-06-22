@@ -12,13 +12,13 @@ extern void saveState(const uint8_t, const uint8_t);
 inline uint8_t Eeprom::read(int idx) const
 {
   // return EEPROM.read(idx);
-  return loadState(idx);
+  return loadState(EEPROM_OFFSET + idx);
 };
 
 inline void Eeprom::write(int idx, uint8_t val)
 {
   // EEPROM.write(idx, val);
-  saveState(idx, val);
+  saveState(EEPROM_OFFSET + idx, val);
 };
 
 
