@@ -4,3 +4,4 @@ workspace.code-workspace
 *.hex
 include/config.h
 include/config.h.local
+shared/platformio_local.ini

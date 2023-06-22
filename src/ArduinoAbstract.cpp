@@ -13,6 +13,12 @@ PinCreator::PinCreator()
 };
 
 
+PinCreator::~PinCreator()
+{
+  _instance = nullptr;
+};
+
+
 // static
 PinCreator * PinCreator::instance()
 {
@@ -126,23 +132,7 @@ void VirtualPin::digitalWrite(uint8_t value)
   #endif
 
 
-  PinInterface * PinCreator::create(int pin)
-  {
-    if (pin < 0) return new VirtualPin(pin);
-    if (pin < 0x100) return new ArduinoPin(pin);
     #ifdef EXPANDER_PCF8574
-      uint8_t expanderNo = (pin >> 8) - 1;
-      return new PCF8574Pin(pin&0xff, _expanders[expanderNo]);
-    #endif
-    #ifdef EXPANDER_MCP23017
-      uint8_t expanderNo = (pin >> 8) - 1;
-      return new MCP23017Pin(pin&0xff, _expanders[expanderNo]);
-    #endif
-    return nullptr;
-  };
-
-
-  #ifdef EXPANDER_PCF8574
   PinCreator::PinCreator(PCF8574 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders)
     : _expanders(expander)
     , _expanderAddresses(expanderAddresses)
@@ -162,6 +152,29 @@ void VirtualPin::digitalWrite(uint8_t value)
     _instance = this;
   };
   #endif
+
+
+  PinInterface * PinCreator::create(int pin)
+  {
+    if (pin < 0) return new VirtualPin(pin);
+    if (pin < 0x100) {
+      if (IS_VALID_DIGITAL_PIN(pin)) {
+        return new ArduinoPin(pin);
+      } else {
+        Serial << "Warning: Invalid pin! Creating VirtualPin: " << pin << "\n";
+        return new VirtualPin(pin);
+      }
+    }
+    #ifdef EXPANDER_PCF8574
+      uint8_t expanderNo = (pin >> 8) - 1;
+      return new PCF8574Pin(pin&0xff, _expanders[expanderNo]);
+    #endif
+    #ifdef EXPANDER_MCP23017
+      uint8_t expanderNo = (pin >> 8) - 1;
+      return new MCP23017Pin(pin&0xff, _expanders[expanderNo]);
+    #endif
+    return nullptr;
+  };
 
 
   #ifdef USE_EXPANDER
@@ -188,6 +201,24 @@ void VirtualPin::digitalWrite(uint8_t value)
     assert(0);
   };
 
+
+  // https://learn.adafruit.com/memories-of-an-arduino/measuring-free-memory
+  #if !defined(ARDUINO_ARCH_ESP8266) && !defined(ARDUINO_ARCH_ESP32)
+    extern int * __brkval;
+  #endif
+
+  uint32_t lkankowski::freeMemory()
+  {
+    #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
+      return ESP.getFreeHeap();
+    #elif defined(CORE_TEENSY) || (ARDUINO > 103 && ARDUINO != 151)
+      int top;
+      return &top - __brkval;
+    #else
+      int top;
+      return __brkval ? &top - __brkval : &top - __malloc_heap_start;
+    #endif
+  };
 
 #else
 
@@ -242,9 +273,9 @@ void VirtualPin::digitalWrite(uint8_t value)
   SerialClass Serial;
 
 
-void lkankowski::haltSystem()
-{
-};
+  void lkankowski::haltSystem()
+  {
+  };
 
 
 #endif

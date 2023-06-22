@@ -1,11 +1,3 @@
-// for development purposes copy "config.h.sample" into "config.h" file or use link:
-// - Windows 10 (PowerShell) as admin: Start-Process -FilePath "$env:comspec" -ArgumentList "/k", "mklink", "config.h","config.h.sample" -Verb RunAs
-// For production you can customize "config.h" or use link to "config.h.local":
-// - Start-Process -FilePath "$env:comspec" -ArgumentList "/k", "mklink", "config.h","config.h.local" -Verb RunAs
-// Alternative version:
-// Start-Process -Verb RunAs -FilePath "powershell" -ArgumentList "-NoExit","-command","New-Item -Path '$(Get-Location)\include\config.h' -ItemType SymbolicLink -Value '$(Get-Location)\include\config.h.sample'"
-
-
 // For mono-stable buttons it will trigger state: LOW - when button is pressed, HIGH - when button is released
 const uint8_t MONO_STABLE_TRIGGER = LOW;
 
@@ -35,13 +27,9 @@ const char MULTI_RELAY_DESCRIPTION[] PROGMEM = "Multi Relay";
 //             relay description - reported on MySensor Gateway, can help identify device on initial configuration in Home Automation App, max. 30 chars, can be empty ("")
 const RelayConfigDef gRelayConfig[] PROGMEM = {
   {1, 2, RELAY_TRIGGER_LOW, -1, "RELAY 1"},
-  {2, 3, RELAY_TRIGGER_LOW, -1, "RELAY 2"},
-  {3, 4, RELAY_TRIGGER_LOW, -1, "RELAY 3"},
-  {4, 5, RELAY_TRIGGER_LOW, -1, "RELAY 4"},
-  {5, 6, RELAY_TRIGGER_LOW, -1, "RELAY 5"},
-  {6, 7, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, -1, "RELAY 6"},
-  {7, 8, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, -1, "RELAY 7"},
-  {8, 9, RELAY_TRIGGER_LOW, -1, "RELAY 8"}
+  {2, 3, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, -1, "RELAY 2"},
+  {3, 4, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON, -1, "RELAY 3"},
+  {4, 5, RELAY_TRIGGER_LOW, -1, "RELAY 4"}
 };
 
 // Buttons config
@@ -52,11 +40,54 @@ const RelayConfigDef gRelayConfig[] PROGMEM = {
 //             double-click action relay ID - ignored for DING_DONG, REED_SWITCH
 //             button description - debug only, max. 30 chars, can be empty ("")
 const ButtonConfigDef gButtonConfig[] PROGMEM = {
-  {A0,  MONO_STABLE, 1,  -1, -1, "BUTTON 1"},
-  {A1,  MONO_STABLE, 2,   6, -1, "BUTTON 2"},
-  {A2,  MONO_STABLE, 3,   1,  7, "BUTTON 3"},
-  {A3,  BI_STABLE,   4,  -1, -1, "BUTTON 4"},
-  {A4,  BI_STABLE,   5,  -1,  2, "BUTTON 5"},
-  {A5,  REED_SWITCH, 8,  -1, -1, "BUTTON 6"}
+  {6,  MONO_STABLE, 1,  -1, -1, "BUTTON 1"},
+  {7,  MONO_STABLE, 2,   1,  3, "BUTTON 2"},
+  {8,  BI_STABLE,   3,  -1, -1, "BUTTON 3"},
+  {9,  REED_SWITCH, 4,  -1, -1, "BUTTON 4"}
 };
 
+
+// WIFI SSID and password
+#define MY_WIFI_SSID "<YOUR WIFI NAME>"
+#define MY_WIFI_PASSWORD "<YOUR WIFI PASSWORD>"
+
+// Hostname for the WiFi Client. This is the hostname passed to the DHCP server if not static.
+#define MY_HOSTNAME "MULTI_RELAY_2"
+
+// Enable MY_IP_ADDRESS here if you want a static ip address (no DHCP)
+//#define MY_IP_ADDRESS 192,168,178,87
+
+// If using static ip you can define Gateway and Subnet address as well
+//#define MY_IP_GATEWAY_ADDRESS 192,168,178,1
+//#define MY_IP_SUBNET_ADDRESS 255,255,255,0
+
+// MAC address can be anything you want but should be unique on your network
+//#define MY_MAC_ADDRESS 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
+
+// Enable MQTT communication (must be commented out for serial and TCP/UDP communication)
+//#define MY_GATEWAY_MQTT_CLIENT
+
+#ifdef MY_GATEWAY_MQTT_CLIENT
+  // Node's subscribe and publish topic prefix
+  #define MY_MQTT_PUBLISH_TOPIC_PREFIX "multi-relay/out"
+  #define MY_MQTT_SUBSCRIBE_TOPIC_PREFIX "multi-relay/in"
+
+  // MQTT client id
+  #define MY_MQTT_CLIENT_ID "multi-relay-2"
+
+  // Enable these if your MQTT broker requires username/password
+  //#define MY_MQTT_USER "<YOUR MQTT USERNAME>"
+  //#define MY_MQTT_PASSWORD "<YOUR MQTT PASSWORD>"
+
+  // MQTT broker ip address
+  #define MY_CONTROLLER_IP_ADDRESS 192,168,178,17
+
+  // MQTT broker if using URL instead of ip address
+  // #define MY_CONTROLLER_URL_ADDRESS "test.mosquitto.org"
+
+  // MQTT broker port (default 1883)
+  //#define MY_PORT 1883
+#else
+  // The Ethernet TCP/UDP port to open on controller or gateway (default 5003).
+  //#define MY_PORT 5003
+#endif

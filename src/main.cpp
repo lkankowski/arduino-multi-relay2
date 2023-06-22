@@ -5,14 +5,19 @@
 #include <EepromAbstract.h>
 #include <RelayService.h>
 #include <ButtonService.h>
-#define MY_GATEWAY_SERIAL
-#include <MySensors.h>
+#include <MySensorsWrapper.h>
+#include <Configuration.h>
+#if defined(MY_GATEWAY_W5100)
+  #include <Ethernet.h>
+#elif defined(MY_GATEWAY_ENC28J60)
+  #include <UIPEthernet.h>
+#endif
 
 using namespace lkankowski;
 
 // Configuration in separate file
-#include <Configuration.h>
 #include "config.h"
+#include <MySensors.h>
 
 #ifdef USE_EXPANDER
   #if defined(EXPANDER_PCF8574)
@@ -48,8 +53,9 @@ Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef
 );
 
 Eeprom gEeprom;
-RelayService gRelayService(gConfiguration, gEeprom);
-ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL);
+MySensorsWrapper gMySensorsWrapper(gConfiguration);
+RelayService gRelayService(gConfiguration, gEeprom, gMySensorsWrapper);
+ButtonService gButtonService(gConfiguration, BUTTON_DEBOUNCE_INTERVAL, gRelayService);
 
 void(* resetFunc) (void) = 0; //declare reset function at address 0
 
@@ -125,21 +131,8 @@ void before()
   
   // Setup buttons
   ButtonInterface::setEventIntervals(BUTTON_DOUBLE_CLICK_INTERVAL, BUTTON_LONG_PRESS_INTERVAL);
-  MonoStableButton::clickTriggerWhenPressed(true);
-
-  // gButtonService.setup();
-  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++)
-  {
-    int clickActionRelayNum = gConfiguration.getRelayNum(gConfiguration.getButtonClickAction(buttonNum));
-    gButtonService.setAction(buttonNum,
-                            clickActionRelayNum,
-                            gConfiguration.getRelayNum(gConfiguration.getButtonLongClickAction(buttonNum)),
-                            gConfiguration.getRelayNum(gConfiguration.getButtonDoubleClickAction(buttonNum)));
-    gButtonService.attachPin(buttonNum);
-    if (((gConfiguration.getButtonType(buttonNum) & 0x0f) == REED_SWITCH) && (clickActionRelayNum > -1)) {
-      gRelayService.reportAsSensor(clickActionRelayNum);
-    }
-  }
+  MonoStableButton::clickTriggerWhenPressed(MONO_STABLE_TRIGGER == LOW);
+  gButtonService.attachPins();
 
   if (versionChangeResetState) {
     // version has changed, so store new version in eeporom
@@ -153,9 +146,7 @@ void setup()
 {
   // Send state to MySensor Gateway
   for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
-    myMessage.setSensor(gRelayService.getSensorId(relayNum));
-    myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-    send(myMessage.set(gRelayService.getState(relayNum))); // send current state
+    gMySensorsWrapper.notify(relayNum, gRelayService.getState(relayNum));
   }
 };
 
@@ -171,36 +162,9 @@ void loop()
     }
   #endif
 
-  if (gRelayService.isImpulsePending()) {
-    for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
-      if (gRelayService.impulseProcess(relayNum, loopStartMillis)) {
-        myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-        myMessage.setSensor(gRelayService.getSensorId(relayNum));
-        send(myMessage.set(0));
-      }
-    }
-  }
+  gRelayService.processImpulse(loopStartMillis);
 
-  for (size_t buttonNum = 0; buttonNum < gConfiguration.getButtonsCount(); buttonNum++) {
-    
-    int relayNum = gButtonService.checkEvent(buttonNum, loopStartMillis);
-    if (relayNum > -1) {
-      // mono/bi-stable button toggles the relay, ding-dong/reed-switch switch to exact state
-      bool relayState = gButtonService.getRelayState(buttonNum, gRelayService.getState(relayNum));
-
-      #ifdef IGNORE_BUTTONS_START_MS
-        if (loopStartMillis > IGNORE_BUTTONS_START_MS) {
-      #endif
-          if (gRelayService.changeState(relayNum, relayState, loopStartMillis)) {
-            myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-            myMessage.setSensor(gRelayService.getSensorId(relayNum));
-            send(myMessage.set(relayState));
-          }
-      #ifdef IGNORE_BUTTONS_START_MS
-        }
-      #endif
-    }
-  }
+  gButtonService.checkEventsAndDoActions(loopStartMillis);
 
   #ifdef DEBUG_STATS
     if (debugStatsOn) {
@@ -232,11 +196,7 @@ void presentation()
                  F(xstr(SKETCH_VERSION)));
   
   // Register every relay as separate sensor
-  for (size_t relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
-    present(gRelayService.getSensorId(relayNum),
-            gRelayService.isSensor(relayNum) ? S_DOOR : S_BINARY,
-            gRelayService.getDescription(relayNum));
-  }
+  gMySensorsWrapper.present();
 };
 
 
@@ -254,11 +214,9 @@ void receive(const MyMessage &message)
     if (message.getType() == V_STATUS) {
       int relayNum = gConfiguration.getRelayNum(message.getSensor());
       if (relayNum == -1) return;
-      gRelayService.changeState(relayNum, message.getBool(), millis());
+      gRelayService.changeRelayState(relayNum, message.getBool(), millis());
       if (! message.getRequestEcho()) {
-        myMessage.setType(gRelayService.isSensor(relayNum) ? V_TRIPPED : V_STATUS);
-        myMessage.setSensor(message.getSensor());
-        send(myMessage.set(message.getBool())); // support for OPTIMISTIC=FALSE (Home Asistant)
+        gMySensorsWrapper.notifyWithId(relayNum, message.getBool(), message.getSensor()); // support for OPTIMISTIC=FALSE (Home Asistant)
       }
     } else if (message.getType() == V_VAR1) {
       int debugCommand = message.getInt();
@@ -296,18 +254,20 @@ void receive(const MyMessage &message)
               (gRelayService.getState(relayNum) != (ArduinoPin::digitalRead(gConfiguration.getRelayPin(relayNum)) ==
                                                     (gConfiguration.getRelayOptions(relayNum) & RELAY_TRIGGER_HIGH))))
           {
-            Serial << F("# Error state relay ") << gRelayService.getSensorId(relayNum)
+            Serial << F("# Error state relay ") << gConfiguration.getRelaySensorId(relayNum)
                    << F(": state=") << gRelayService.getState(relayNum)
                    << F(", pin_state=") << ArduinoPin::digitalRead(gConfiguration.getRelayPin(relayNum)) << "\n";
           }
           if (((gConfiguration.getRelayOptions(relayNum) & RELAY_STARTUP_MASK) == 0) &&
               (gRelayService.getState(relayNum) != (gEeprom.read(RELAY_STATE_STORAGE + relayNum) == 1)))
           {
-            Serial << F("# Error eeprom relay ") << gRelayService.getSensorId(relayNum)
+            Serial << F("# Error eeprom relay ") << gConfiguration.getRelaySensorId(relayNum)
                    << F(": state=") << gRelayService.getState(relayNum)
                    << F(", eeprom=") << gEeprom.read(RELAY_STATE_STORAGE + relayNum) << "\n";
           }
         }
+      } else if (debugCommand == 8) { // free memory
+        Serial << F("# FreeMemory [bytes]: ") << freeMemory() << "\n";
       }
     }
   }

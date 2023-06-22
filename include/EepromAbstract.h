@@ -2,6 +2,10 @@
 
 #include <stdint.h>
 
+#ifndef EEPROM_OFFSET
+  #define EEPROM_OFFSET 0
+#endif
+
 namespace lkankowski {
 
   class EepromInterface

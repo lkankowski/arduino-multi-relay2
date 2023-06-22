@@ -8,7 +8,12 @@ unsigned long ButtonInterface::_longclickInterval = 800;
 bool MonoStableButton::_clickTriggerWhenPressed = true;
 
 
-ButtonInterface * ButtonInterface::create(int type, int pin, unsigned int debounceInterval)
+ButtonInterface * ButtonInterface::create(int type,
+                                          int pin,
+                                          unsigned int debounceInterval,
+                                          int clickActionId,
+                                          int longClickActionId,
+                                          int doubleClickActionId)
 {
   HardwareSwitchInterface * switchHW =
     HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED,
@@ -18,10 +23,10 @@ ButtonInterface * ButtonInterface::create(int type, int pin, unsigned int deboun
 
   switch(type & 0x0f)
   {
-    case MONO_STABLE: return new MonoStableButton(switchHW);
-    case BI_STABLE:   return new BiStableButton(switchHW);
-    case DING_DONG:   return new DingDongButton(switchHW);
-    case REED_SWITCH: return new ReedSwitch(switchHW);
+    case MONO_STABLE: return new MonoStableButton(switchHW, clickActionId, longClickActionId, doubleClickActionId);
+    case BI_STABLE:   return new BiStableButton(switchHW, clickActionId, doubleClickActionId);
+    case DING_DONG:   return new DingDongButton(switchHW, clickActionId);
+    case REED_SWITCH: return new ReedSwitch(switchHW, clickActionId);
   }
   delete switchHW;
   return nullptr;
@@ -30,11 +35,9 @@ ButtonInterface * ButtonInterface::create(int type, int pin, unsigned int deboun
 
 ButtonInterface::ButtonInterface(HardwareSwitchInterface * switchHW)
     : _switch(switchHW)
-    , _clickRelayNum(-1)
-    , _longclickRelayNum(-1)
-    , _doubleclickRelayNum(-1)
     , _eventState(BTN_STATE_INITIAL)
     , _startStateMillis(0)
+    , _clickActionId(-1)
 {};
 
 
@@ -44,31 +47,39 @@ ButtonInterface::~ButtonInterface()
 };
 
 
-MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW)
+MonoStableButton::MonoStableButton(HardwareSwitchInterface * switchHW,
+                                   int clickActionId,
+                                   int longClickActionId,
+                                   int doubleClickActionId)
   : ButtonInterface(switchHW)
-{};
-
-
-BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW)
-  : ButtonInterface(switchHW)
-{};
-
-
-DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW)
-  : ButtonInterface(switchHW)
-{};
-
-
-ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW)
-  : ButtonInterface(switchHW)
-{};
-
-
-void ButtonInterface::setAction(int clickRelayNum, int longclickRelayNum, int doubleclickRelayNum)
+  , _longClickActionId(longClickActionId)
+  , _doubleClickActionId(doubleClickActionId)
 {
-  _clickRelayNum = clickRelayNum;
-  _longclickRelayNum = longclickRelayNum;
-  _doubleclickRelayNum = doubleclickRelayNum;
+  _clickActionId = clickActionId;
+};
+
+
+BiStableButton::BiStableButton(HardwareSwitchInterface * switchHW,
+                               int clickActionId,
+                               int doubleClickActionId)
+  : ButtonInterface(switchHW)
+  , _doubleClickActionId(doubleClickActionId)
+{
+  _clickActionId = clickActionId;
+};
+
+
+DingDongButton::DingDongButton(HardwareSwitchInterface * switchHW, int clickActionId)
+  : ButtonInterface(switchHW)
+{
+  _clickActionId = clickActionId;
+};
+
+
+ReedSwitch::ReedSwitch(HardwareSwitchInterface * switchHW, int clickActionId)
+  : ButtonInterface(switchHW)
+{
+  _clickActionId = clickActionId;
 };
 
 
@@ -100,19 +111,19 @@ int MonoStableButton::checkEvent(unsigned long millis)
 
   int relayNum = -1;
   if (buttonAction & BUTTON_CLICK) {
-    relayNum = _clickRelayNum;
+    relayNum = _clickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("Click for relay ") << relayNum << "\n";
+      Serial << F("Click for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
-    relayNum = _doubleclickRelayNum;
+    relayNum = _doubleClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("DoubleClick for relay ") << relayNum << "\n";
+      Serial << F("DoubleClick for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_LONG_PRESS) {
-    relayNum = _longclickRelayNum;
+    relayNum = _longClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("LongPress for relay ") << relayNum << "\n";
+      Serial << F("LongPress for relayNum=") << relayNum;
     #endif
   }
   return relayNum;
@@ -126,30 +137,29 @@ int BiStableButton::checkEvent(unsigned long millis)
 
   int relayNum = -1;
   if (buttonAction & BUTTON_CLICK) {
-    relayNum = _clickRelayNum;
+    relayNum = _clickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("Click for relay ") << relayNum << "\n";
+      Serial << F("Click for relayNum=") << relayNum;
     #endif
   } else if (buttonAction & BUTTON_DOUBLE_CLICK) {
-    relayNum = _doubleclickRelayNum;
+    relayNum = _doubleClickActionId;
     #ifdef DEBUG_ACTION
-      Serial << F("DoubleClick for relay ") << relayNum << "\n";
+      Serial << F("DoubleClick for relayNum=") << relayNum;
     #endif
   }
+
   return relayNum;
 };
-
-
 
 
 int DingDongButton::checkEvent(unsigned long millis)
 {
   if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
     _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
-    return _clickRelayNum;
+    return _clickActionId;
   }
   if (_switch->update(millis)) {
-    return _clickRelayNum;
+    return _clickActionId;
   }
   return -1;
 };
@@ -159,10 +169,10 @@ int ReedSwitch::checkEvent(unsigned long millis)
 {
   if (_eventState == BTN_STATE_INITIAL) { // on first checkEvent call it must trigger a get of the exact state
     _eventState = BTN_STATE_1ST_PRESS; // irrelevant - must be different than BTN_STATE_INITIAL
-    return _clickRelayNum;
+    return _clickActionId;
   }
   if (_switch->update(millis)) {
-    return _clickRelayNum;
+    return _clickActionId;
   }
   return -1;
 };
@@ -173,14 +183,19 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
   int result = BUTTON_NO_EVENT;
   bool currentState = _switch->getState();
 
-  bool hasLongClick = _longclickRelayNum != -1;
-  bool hasDoubleClick = _doubleclickRelayNum != -1;
+  bool hasLongClick = _longClickActionId != -1;
+  bool hasDoubleClick = _doubleClickActionId != -1;
 
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
-    if (currentState) { //changed from switchStateChanged
-      _startStateMillis = now;
-      _eventState = BTN_STATE_1ST_PRESS;
-      result = BUTTON_PRESSED;
+    if (currentState) {
+      if ((!hasDoubleClick) && (!hasLongClick) && (_clickTriggerWhenPressed)) { // no long/double-click action, do click
+        result = BUTTON_CLICK | BUTTON_PRESSED;
+        _eventState = BTN_STATE_RELEASE_WAIT;
+      } else {
+        _startStateMillis = now;
+        _eventState = BTN_STATE_1ST_PRESS;
+        result = BUTTON_PRESSED;
+      }
     }
   } else if (_eventState == BTN_STATE_1ST_PRESS) { // waiting for 1st release
     if (!currentState) { //released
@@ -191,10 +206,7 @@ int MonoStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
         _eventState = BTN_STATE_1ST_RELEASE;
       }
     } else { // still pressed
-      if ((!hasDoubleClick) && (!hasLongClick) && (currentState == _clickTriggerWhenPressed)) { // no long/double-click action, do click
-        result = BUTTON_CLICK | BUTTON_PRESSED;
-        _eventState = BTN_STATE_RELEASE_WAIT;
-      } else if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
+      if (hasLongClick && ((now - _startStateMillis) > _longclickInterval)) {
         result = BUTTON_LONG_PRESS | BUTTON_PRESSED;
         _eventState = BTN_STATE_RELEASE_WAIT;
       } else {
@@ -237,7 +249,7 @@ int BiStableButton::calculateEvent(bool switchStateChanged, unsigned long now)
 {
   int result = BUTTON_NO_EVENT;
 
-  bool hasDoubleClick = _doubleclickRelayNum != -1;
+  bool hasDoubleClick = _doubleClickActionId != -1;
 
   if (_eventState == BTN_STATE_INITIAL) { // waiting for change
     if (switchStateChanged) {

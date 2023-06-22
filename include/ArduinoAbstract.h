@@ -8,6 +8,18 @@
 #ifdef ARDUINO
   #include <Arduino.h>
 
+  #if defined(ARDUINO_ARCH_AVR)
+    #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+  #elif defined (ARDUINO_ARCH_ESP8266)
+    #define IS_VALID_DIGITAL_PIN(pin) (((pin >= 0) && (pin < NUM_DIGITAL_PINS)) && !isFlashInterfacePin(pin))
+  #elif defined (ARDUINO_ARCH_ESP32)
+    #define isFlashInterfacePin(pin)  ((pin) >= 6 && (pin) <= 11)
+    #define IS_VALID_DIGITAL_PIN(pin) (digitalPinIsValid(pin) && !isFlashInterfacePin(pin) && \
+                                       ((pin) != 20) && ((pin) != 37) && ((pin) != 38))
+                                       //((pin) != 24) && !(((pin) >= 28) && (pin) <= 31) // already excluded in digitalPinIsValid()
+                                       
+  #endif
+
   #if defined(EXPANDER_PCF8574) || defined(EXPANDER_MCP23017)
     #if defined(EXPANDER_PCF8574)
       #include "PCF8574.h"
@@ -24,9 +36,10 @@
     #define E(expanderNo, ExpanderPin) (-(((expanderNo+1)<<8) | (ExpanderPin)))
   #endif
 
-#else
+#else //!ARDUINO
   #include <string.h>
   #define F(x) (x)
+  #define E(expanderNo, ExpanderPin) (((expanderNo+1)<<8) | (ExpanderPin))
 #endif //ARDUINO
 
 
@@ -138,6 +151,8 @@ namespace lkankowski {
         PinCreator(Adafruit_MCP23017 * expander, const uint8_t * expanderAddresses, const uint8_t numberOfExpanders);
       #endif
 
+      ~PinCreator();
+
       static PinCreator * instance();
 
       PinInterface * create(int pin);
@@ -152,9 +167,11 @@ namespace lkankowski {
       #elif defined(EXPANDER_MCP23017)
         Adafruit_MCP23017 * _expanders;
       #endif
-      const uint8_t * _expanderAddresses;
-      uint8_t _numberOfExpanders;
-  };
+      #ifdef USE_EXPANDER
+        const uint8_t * _expanderAddresses;
+        uint8_t _numberOfExpanders;
+      #endif
+};
 
   void haltSystem();
 
@@ -169,6 +186,8 @@ namespace lkankowski {
   #ifdef ARDUINO
     template<class T> inline Print & operator <<(Print & obj, T arg) { obj.print(arg); return obj; };
   #endif
+
+  uint32_t freeMemory();
 
 } // namespace lkankowski
 
@@ -231,12 +250,59 @@ extern SerialClass Serial;
   #define A13  (67)
   #define A14  (68)
   #define A15  (69)
-  #define NUM_DIGITAL_PINS            70
-  #define PIN_WIRE_SDA        (20)
-  #define PIN_WIRE_SCL        (21)
-  #define SERIAL_PORT_RX        (0)
-  #define SERIAL_PORT_TX        (1)
+  #define NUM_DIGITAL_PINS  (70)
+  #define PIN_WIRE_SDA      (20)
+  #define PIN_WIRE_SCL      (21)
+  #define SERIAL_PORT_RX    (0)
+  #define SERIAL_PORT_TX    (1)
   #define LED_BUILTIN 13
+#elif defined(BOARD_TARGET_ATMEGA328)
+  #undef LED_BUILTIN
+  #undef A0
+  #undef A1
+  #undef A2
+  #undef A3
+  #undef A4
+  #undef A5
+  #undef A6
+  #undef A7
+  #define A0                (14)
+  #define A1                (15)
+  #define A2                (16)
+  #define A3                (17)
+  #define A4                (18)
+  #define A5                (19)
+  #define A6                (20) //nano
+  #define A7                (21) //nano
+  #define NUM_DIGITAL_PINS  (20)
+  #define PIN_WIRE_SDA      (18)
+  #define PIN_WIRE_SCL      (19)
+  #define SERIAL_PORT_RX    (0)
+  #define SERIAL_PORT_TX    (1)
+  #define LED_BUILTIN       (13)
+#elif defined(BOARD_TARGET_ESP8266)
+  #define D0                (16)
+  #define D1                (5)
+  #define D2                (4)
+  #define D3                (0)
+  #define D4                (2)
+  #define D5                (14)
+  #define D6                (12)
+  #define D7                (13)
+  #define D8                (15)
+  #define D9                (3)
+  #define D10               (1)
+  #define A0                (17)
+  #define NUM_DIGITAL_PINS  (17)
+  #define PIN_WIRE_SDA      (4)
+  #define PIN_WIRE_SCL      (5)
+  #define SERIAL_PORT_RX    (3)
+  #define SERIAL_PORT_TX    (1)
+  #define LED_BUILTIN       (2)
+
+
+  #define isFlashInterfacePin(p)      ((p) >= 6 && (p) <= 11)
+
 #endif
 
 #endif

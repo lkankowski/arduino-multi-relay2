@@ -5,13 +5,23 @@
 #include <RelayService.h>
 #include <Button.h>
 #include <ButtonService.h>
+#include <MySensorsWrapper.h>
 #include <unity.h>
 #include <iostream>
 #include <string>
 #include <typeinfo>
 
 
-//#define USE_EXPANDER
+// #define USE_EXPANDER
+
+#if defined(BOARD_TARGET_ATMEGA2560)
+  #define NUM_DIGITAL_PINS (70)
+  #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+#elif defined (BOARD_TARGET_ATMEGA328)
+  #define IS_VALID_DIGITAL_PIN(pin) ((pin >= 0) && (pin < NUM_DIGITAL_PINS))
+#elif defined (BOARD_TARGET_ESP8266)
+  #define IS_VALID_DIGITAL_PIN(pin) (((pin >= 0) && (pin < NUM_DIGITAL_PINS)) && !isFlashInterfacePin(pin))
+#endif
 
 using namespace std;
 using namespace lkankowski;
@@ -24,13 +34,15 @@ const ButtonConfigRef gButtonConfigRef = {gButtonConfig, sizeof(gButtonConfig) /
 Configuration gConfiguration(gRelayConfigRef, gButtonConfigRef);
 
 Eeprom gEeprom;
-RelayService gRelayService(gConfiguration, gEeprom);
+MySensorsWrapper gMySensorsWrapper(gConfiguration);
+RelayService gRelayService(gConfiguration, gEeprom, gMySensorsWrapper);
 
 
-void setUp(void)
-{
-  ButtonInterface::setEventIntervals(350, 800);
-};
+// void suiteSetUp(void) {};
+// void setUp(void) {};
+// void tearDown(void)  {};
+// int suiteTearDown(int num_failures); 
+
 
 
 void test_config_relays()
@@ -49,24 +61,14 @@ void test_config_relays()
     for (int relayNum = 0; relayNum < gConfiguration.getRelaysCount(); relayNum++) {
       int pin = gRelayConfig[relayNum].relayPin;
       if (pin >= 0) { // exclude virtual relays
-        if (pin & 0xff00) { //exclude expander pins
-          TEST_ASSERT_LESS_THAN_MESSAGE(NUM_DIGITAL_PINS,
-                                        pin,
-                                        (string("Pin number is greater than number of digital pins: ") + to_string(pin)).c_str());
+        if (pin < 0x100) { //exclude expander pins
+          TEST_ASSERT_LESS_THAN_MESSAGE(NUM_DIGITAL_PINS, pin, "Pin number is greater than number of digital pins");
         }
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_RX,
-                                      pin,
-                                      (string("Pin conflicts with default RX pin: ") + to_string(pin)).c_str());
-        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_TX,
-                                      pin,
-                                      (string("Pin conflicts with default TX pin: ") + to_string(pin)).c_str());
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_RX, pin, "Pin conflicts with default RX pin");
+        TEST_ASSERT_NOT_EQUAL_MESSAGE(SERIAL_PORT_TX, pin, "Pin conflicts with default TX pin");
         #if defined(USE_EXPANDER)
-          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SDA,
-                                        pin,
-                                        (string("Pin conflicts with default expander SDA pin: ") + to_string(pin)).c_str());
-          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SCL,
-                                        pin,
-                                        (string("Pin conflicts with default expander SCL pin: ") + to_string(pin)).c_str());
+          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SDA, pin, "Pin conflicts with default expander SDA pin");
+          TEST_ASSERT_NOT_EQUAL_MESSAGE(PIN_WIRE_SCL, pin, "Pin conflicts with default expander SCL pin");
           if (pin & 0xff00) {
             TEST_ASSERT_MESSAGE((((pin >> 8) > gNumberOfExpanders) || ((pin & 0xff) >= EXPANDER_PINS)),
                                 (string("Configuration failed - expander no or number of pins out of range for button: ") + to_string(buttonNum)).c_str());
@@ -134,8 +136,8 @@ void test_configuration()
     {5, 4, RELAY_TRIGGER_HIGH | RELAY_STARTUP_OFF, 3, "Lamp 4"},
   };
   const ButtonConfigDef buttonConfig[] = {
-    {1, MONO_STABLE, 1, -1, -1, "Button 1"},
-    {2, BI_STABLE,   2, -1, -1, "Button 2"},
+    {1, MONO_STABLE, 0, -1, -1, "Button 1"},
+    {2, BI_STABLE,   5, -1, -1, "Button 2"},
     {3, DING_DONG,   3, -1, -1, "Button 3"},
     {4, REED_SWITCH | PRESSED_STATE_HIGH, 4, 7, 9, "Button 4"},
   };
@@ -186,20 +188,32 @@ void test_virtual_pin()
 
 void test_pin_creator()
 {
-  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "PinCreator::instance() shoud be null and not dynamicaly alocated");
-  PinCreator pinCreator;
-  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "PinCreator now should be initialized");
-  PinInterface * pin = pinCreator.create(-1);
-  TEST_ASSERT_NOT_NULL_MESSAGE(pin, "PinCreator should create an instance of a PinInterface");
+  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud be null and not dynamicaly alocated");
+
+  #ifdef USE_EXPANDER
+    PinCreator * pinCreator = new PinCreator(gExpander, gExpanderAddresses, sizeof(gExpanderAddresses));
+  #else
+    PinCreator * pinCreator = new PinCreator;
+  #endif
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[1] PinCreator now should be initialized");
+  
+  PinInterface * pin = pinCreator->create(-1);
+  TEST_ASSERT_NOT_NULL_MESSAGE(pin, "[2] PinCreator should create an instance of a PinInterface");
+  
+  // (pin instanceOf VirtualPin) - NOT WORK :(
   // VirtualPin * v = dynamic_cast<VirtualPin *>(pin);
-  // TEST_ASSERT_NOT_NULL_MESSAGE(v, "PinCreator should create a VirtualPin instance");
+  // TEST_ASSERT_NOT_NULL_MESSAGE(v, "[3] PinCreator should create a VirtualPin instance");
+  
   delete pin;
-  // PinCreator::instance() now will be invalid
+  delete pinCreator;
+  
+  TEST_ASSERT_NULL_MESSAGE(PinCreator::instance(), "[4] PinCreator::instance() shoud be null");
 };
 
 
 void test_relayservice()
 {
+  PinCreator pinCreator;
   const RelayConfigDef relayConfig[] = {
     {0, 1, RELAY_TRIGGER_LOW, -1, "Lamp 1"},
     {5, 2, RELAY_TRIGGER_LOW, -1, "Lamp 2"},
@@ -209,21 +223,23 @@ void test_relayservice()
   const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
-  RelayService relayService(configuration, gEeprom);
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  RelayService relayService(configuration, gEeprom, gMySensorsWrapper);
   relayService.initialize(true); // reset eeprom
 
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[1] Lamp 3 should have pin state HIGH when turned OFF");
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[4], "[2] Lamp 4 should have pin state LOW when turned OFF");
 
-  relayService.changeState(2, true, 0);
-  relayService.changeState(3, true, 0);
+  relayService.changeRelayState(2, true, 0);
+  relayService.changeRelayState(3, true, 0);
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW,  FakePin::_state[3], "[3] Lamp 3 should have pin state LOW when turned ON");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[4], "[3] Lamp 4 should have pin state HIGH when turned ON");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[4], "[4] Lamp 4 should have pin state HIGH when turned ON");
 };
 
 
 void test_relay_startup_eeprom()
 {
+  PinCreator pinCreator;
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_STARTUP_ON,  -1, "Lamp 1"},
     {2, 12, RELAY_TRIGGER_LOW | RELAY_STARTUP_OFF, -1, "Lamp 2"},
@@ -233,17 +249,18 @@ void test_relay_startup_eeprom()
   const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
-  RelayService relayService(configuration, gEeprom);
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  RelayService relayService(configuration, gEeprom, gMySensorsWrapper);
   relayService.initialize(true); // reset eeprom
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be ON");
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "[1] Lamp 2 should be OFF");
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(2), "[1] Lamp 3 should be OFF");
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "[1] Lamp 4 should be OFF");
   
-  relayService.changeState(0, false, 0);
-  relayService.changeState(1, true, 0);
-  relayService.changeState(2, true, 0);
-  relayService.changeState(3, true, 0);
+  relayService.changeRelayState(0, false, 0);
+  relayService.changeRelayState(1, true, 0);
+  relayService.changeRelayState(2, true, 0);
+  relayService.changeRelayState(3, true, 0);
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[2] Lamp 1 should be OFF");
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "[2] Lamp 2 should be ON");
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(2), "[2] Lamp 3 should be ON");
@@ -251,7 +268,7 @@ void test_relay_startup_eeprom()
 
   long dummy = -1L;
 
-  RelayService relayService2(configuration, gEeprom);
+  RelayService relayService2(configuration, gEeprom, gMySensorsWrapper);
   relayService2.initialize(false); // do not reset eeprom
   TEST_ASSERT_TRUE_MESSAGE(relayService2.getState(0), "[3] Lamp 1 should be ON");
   TEST_ASSERT_FALSE_MESSAGE(relayService2.getState(1), "[3] Lamp 2 should be OFF");
@@ -262,77 +279,104 @@ void test_relay_startup_eeprom()
 
 void test_relay_impulse()
 {
+  PinCreator pinCreator;
   const RelayConfigDef relayConfig[] = {
     {1, 11, RELAY_TRIGGER_LOW | RELAY_IMPULSE,  -1, "Lamp 1"}
   };
   const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
   
-  RelayService relayService(configuration, gEeprom);
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  RelayService relayService(configuration, gEeprom, gMySensorsWrapper);
   relayService.setImpulseInterval(250);
   relayService.initialize(true); // reset eeprom
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[1] Lamp 1 should be OFF");
 
-  relayService.changeState(0, true, 1000UL);
+  relayService.changeRelayState(0, true, 1000UL);
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[2] Lamp 1 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relayService.isImpulsePending(), "[2] Lamp 1 should be isImpulsePending() == TRUE");
 
-  TEST_ASSERT_FALSE_MESSAGE(relayService.impulseProcess(0, 1200UL), "[3] impulseProcess() should be FALSE");
+  relayService.processImpulse(1200UL);
   TEST_ASSERT_TRUE_MESSAGE(relayService.getState(0), "[3] Lamp 1 should be ON");
   
-  TEST_ASSERT_TRUE_MESSAGE(relayService.impulseProcess(0, 1300UL), "[4] impulseProcess() should be TRUE");
+  relayService.processImpulse(1300UL);
   TEST_ASSERT_FALSE_MESSAGE(relayService.getState(0), "[4] Lamp 1 should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(relayService.isImpulsePending(), "[4] Lamp 1 should be isImpulsePending() == FALSE");
 };
 
 
 void test_relay_dependsOn()
 {
+  PinCreator pinCreator;
   const RelayConfigDef relayConfig[] = {
-    {1, 11, RELAY_TRIGGER_LOW, -1, "Lamp 1"},
+    {1, 11, RELAY_TRIGGER_LOW, 7, "Lamp 1"},
     {2, 12, RELAY_TRIGGER_LOW, 4,  "Lamp 2"},
     {3, 13, RELAY_TRIGGER_LOW, 5,  "Lamp 3"},
     {4, 14, RELAY_TRIGGER_LOW, -1, "Power Supply"},
-    {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"}
+    {5, 15, RELAY_TRIGGER_LOW | RELAY_INDEPENDENT, -1, "Stairs light"},
+    {6, 13, RELAY_TRIGGER_LOW, 4,  "Lamp 5"},
+    {7, 13, RELAY_TRIGGER_LOW, 4,  "Power Supply 2"},
   };
+  // simulate previous states
+  gEeprom.write(RELAY_STATE_STORAGE + 0, 0);
+  gEeprom.write(RELAY_STATE_STORAGE + 1, 1);
+  gEeprom.write(RELAY_STATE_STORAGE + 2, 0);
+  gEeprom.write(RELAY_STATE_STORAGE + 3, 0);
+  gEeprom.write(RELAY_STATE_STORAGE + 4, 0);
+  gEeprom.write(RELAY_STATE_STORAGE + 5, 0);
+  gEeprom.write(RELAY_STATE_STORAGE + 6, 0);
+
   const RelayConfigRef relayConfigRef = {relayConfig, sizeof(relayConfig) / sizeof(RelayConfigDef)};
   Configuration configuration(relayConfigRef, gButtonConfigRef);
 
-  RelayService relayService(configuration, gEeprom);
-  relayService.initialize(true);
-  relayService.changeState(1, true, 0);
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "Lamp 2 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "Power Supply should be ON after power ON Lamp 2");
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  RelayService relayService(configuration, gEeprom, gMySensorsWrapper);
+  relayService.initialize(false);
+
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "[1] Lamp 2 should be ON after startup");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "[2] Power Supply should be ON after startup because Lamp 2 was ON");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(6), "[3] Power Supply 2 should be OFF");
+
+  relayService.changeRelayState(1, false, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "[4] Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "[5] Power Supply should be ON after power OFF Lamp 2");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.turnOffDependent(0), "[6] turnOffDependent() should return FALSE");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "[7] Power Supply should be OFF after turnOffDependent");
+
+  relayService.changeRelayState(1, true, 0);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(1), "[8] Lamp 2 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "[9] Power Supply should be ON after power ON Lamp 2");
 
   bool isAnyDependentOn = relayService.turnOffDependent(0);
-  TEST_ASSERT_TRUE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return TRUE");
+  TEST_ASSERT_TRUE_MESSAGE(isAnyDependentOn, "[10] turnOffDependent() should return TRUE");
 
-  relayService.changeState(1, false, 0);
-  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "Lamp 2 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "Power Supply should be ON after power OFF Lamp 2");
+  relayService.changeRelayState(1, false, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(1), "[11] Lamp 2 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(3), "[12] Power Supply should be ON after power OFF Lamp 2");
 
-  relayService.changeState(2, true, 0);
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(2), "Lamp 3 should be ON");
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON after power ON Lamp 3");
+  relayService.changeRelayState(2, true, 0);
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(2), "[13] Lamp 3 should be ON");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "[14] Stairs light should be ON after power ON Lamp 3");
 
   isAnyDependentOn = relayService.turnOffDependent(0);
-  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "Power Supply should be OFF");
-  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE");
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(3), "[15] Power Supply should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "[16] turnOffDependent() should return FALSE");
 
   // RELAY_INDEPENDENT
-  relayService.changeState(2, false, 0);
-  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(2), "Lamp 3 should be OFF");
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON after power OFF Lamp 3");
+  relayService.changeRelayState(2, false, 0);
+  TEST_ASSERT_FALSE_MESSAGE(relayService.getState(2), "[17] Lamp 3 should be OFF");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "[18] Stairs light should be ON after power OFF Lamp 3");
   isAnyDependentOn = relayService.turnOffDependent(0);
-  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "Stairs light should be ON even after turnOffDependent()");
-  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "turnOffDependent() should return FALSE [2]");
+  TEST_ASSERT_TRUE_MESSAGE(relayService.getState(4), "[19] Stairs light should be ON even after turnOffDependent()");
+  TEST_ASSERT_FALSE_MESSAGE(isAnyDependentOn, "[20] turnOffDependent() should return FALSE");
 };
 
 
 void test_switch_startup_pullup()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
   pin.digitalWrite(HIGH);
+  
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
   HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
   hardwareSwitch->attachPin();
 
@@ -348,8 +392,11 @@ void test_switch_startup_pullup()
 
 void test_switch_startup_pullup_bi_on()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
   pin.digitalWrite(LOW);
+  
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
   HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
   hardwareSwitch->attachPin();
 
@@ -365,8 +412,11 @@ void test_switch_startup_pullup_bi_on()
 
 void test_switch_startup_pulldown()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
   pin.digitalWrite(LOW);
+  
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
   HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, HIGH);
   hardwareSwitch->attachPin();
 
@@ -382,8 +432,11 @@ void test_switch_startup_pulldown()
 
 void test_switch_low()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
   pin.digitalWrite(HIGH);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
   HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, LOW);
   hardwareSwitch->attachPin();
 
@@ -410,8 +463,11 @@ void test_switch_low()
 
 void test_switch_high()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
   pin.digitalWrite(LOW); // pull-down
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
   HardwareSwitchInterface * hardwareSwitch = HardwareSwitchInterface::create(HardwareSwitchInterface::SWITCH_DEBOUNCED, 1, 50, HIGH);
   hardwareSwitch->attachPin();
 
@@ -438,10 +494,12 @@ void test_switch_high()
 
 void test_button_mono_only_click_when_pressed()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, 1, -1, -1);
   MonoStableButton::clickTriggerWhenPressed(true);
-  button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
   button->attachPin();
 
@@ -449,17 +507,15 @@ void test_button_mono_only_click_when_pressed()
   TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[2] Button 1 should have pin state HIGH");
 
   pin.digitalWrite(LOW);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[3] checkEvent(0) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(45), "[4] checkEvent(45) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(0), "[3] checkEvent(0) should return -1 (debouncing start)");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(45), "[4] checkEvent(45) should return -1 (inside debouncing)");
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[5] Button 1 should have pin state LOW");
 
-  // after debounce interval first, run of "checkEvent" will only change state machine, and second invoke CLICK
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(60), "[6] checkEvent(60) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(61), "[7] checkEvent(61) should return 1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(61), "[6] checkEvent(61) should return 1 (after debouncing)");
 
   pin.digitalWrite(HIGH);
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(120), "[8] checkEvent(120) should return -1");
-  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(121), "[9] checkEvent(121) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(120), "[7] checkEvent(120) should return -1");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(121), "[8] checkEvent(121) should return -1");
 
   delete button;
 };
@@ -467,10 +523,12 @@ void test_button_mono_only_click_when_pressed()
 
 void test_button_mono_only_click_when_released()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, 1, -1, -1);
   MonoStableButton::clickTriggerWhenPressed(false);
-  button->setAction(1, -1, -1);
   pin.digitalWrite(HIGH);
   button->attachPin();
 
@@ -489,10 +547,12 @@ void test_button_mono_only_click_when_released()
 
 void test_button_mono_all()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(MONO_STABLE, 1, 50, 1, 2, 3);
   MonoStableButton::clickTriggerWhenPressed(true);
-  button->setAction(1, 2, 3);
   pin.digitalWrite(HIGH);
   button->attachPin();
 
@@ -518,7 +578,6 @@ void test_button_mono_all()
   pin.digitalWrite(HIGH);
   TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1120), "[10] checkEvent(1120) should return -1");
   TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1180), "[11] checkEvent(1180) should return -1");
-  //TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1181), "[12] checkEvent(1181) should return -1");
   
   pin.digitalWrite(LOW);
   TEST_ASSERT_EQUAL_INT_MESSAGE(-1, button->checkEvent(1240), "[13] checkEvent(1240) should return -1");
@@ -542,9 +601,11 @@ void test_button_mono_all()
 
 void test_button_bi_only()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50);
-  button->setAction(1, -1, -1);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, 1, -1, -1);
   pin.digitalWrite(HIGH);
   button->attachPin();
 
@@ -562,9 +623,11 @@ void test_button_bi_only()
 
 void test_button_bi_all()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50);
-  button->setAction(1, -1, 2);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(BI_STABLE, 1, 50, 1, -1, 2);
   pin.digitalWrite(HIGH);
   button->attachPin();
 
@@ -592,16 +655,18 @@ void test_button_bi_all()
 void test_button_ding_dong_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(DING_DONG, 1, 50);
-  button->setAction(1, -1, -1);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(DING_DONG, 1, 50, 1, -1, -1);
   pin.digitalWrite(HIGH); // initially same state as MONO
   button->attachPin();
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, pin.digitalRead(), "[1] Button 1 should have pin state HIGH");
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(0), "[2] checkEvent(0) on first call should trigger getting exact state by returning relay num");
-  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(false), "[3] relay state initially should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(), "[3] relay state initially should be OFF");
 
   // DING (pressed)
   pin.digitalWrite(LOW);
@@ -622,15 +687,17 @@ void test_button_ding_dong_only()
 void test_button_reed_switch_only()
 {
   // TODO: ButtonInterface::clickTriggerWhenPressed(HIGH); ????
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, 1, 50);
-  button->setAction(1, -1, -1);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * button = ButtonInterface::create(REED_SWITCH, 1, 50, 1, -1, -1);
   pin.digitalWrite(LOW); // initially LOW - window closed
   button->attachPin();
 
   TEST_ASSERT_EQUAL_INT_MESSAGE(LOW, pin.digitalRead(), "[1] Button 1 should have pin state LOW");
   TEST_ASSERT_EQUAL_INT_MESSAGE(1, button->checkEvent(0), "[2] checkEvent(0) on first call should trigger getting exact state by returning relay num");
-  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(false), "[3] relay state initially should be OFF");
+  TEST_ASSERT_FALSE_MESSAGE(button->getRelayState(), "[3] relay state initially should be OFF");
 
   // OPEN (reed switch disconnected)
   pin.digitalWrite(HIGH);
@@ -650,93 +717,149 @@ void test_button_reed_switch_only()
 
 void test_button_to_relay_state()
 {
+  PinCreator pinCreator;
   FakePin pin(1);
-  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, 1, 50);
+
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  ButtonInterface * buttonMono = ButtonInterface::create(MONO_STABLE, 1, 50, 1, -1, -1);
   buttonMono->attachPin();
 
-  TEST_ASSERT_FALSE_MESSAGE(buttonMono->getRelayState(true), "[1] getRelayState MONO");
-  TEST_ASSERT_TRUE_MESSAGE(buttonMono->getRelayState(false), "[2] getRelayState MONO");
+  TEST_ASSERT_TRUE_MESSAGE(buttonMono->isToogle(), "[1] isToogle MONO");
+  TEST_ASSERT_FALSE_MESSAGE(buttonMono->getRelayState(), "[2] getRelayState MONO");
 
   delete buttonMono;
 
-  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, 1, 50);
+  ButtonInterface * buttonBi = ButtonInterface::create(BI_STABLE, 1, 50, 1, -1, -1);
   buttonBi->attachPin();
 
-  TEST_ASSERT_FALSE_MESSAGE(buttonBi->getRelayState(true), "[3] getRelayState BI");
-  TEST_ASSERT_TRUE_MESSAGE(buttonBi->getRelayState(false), "[4] getRelayState BI");
+  TEST_ASSERT_TRUE_MESSAGE(buttonBi->isToogle(), "[3] isToogle BI");
+  TEST_ASSERT_FALSE_MESSAGE(buttonBi->getRelayState(), "[4] getRelayState BI");
 
   delete buttonBi;
 
   pin.digitalWrite(HIGH); // pullup - OFF
-  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50);
+  ButtonInterface * buttonDingDong = ButtonInterface::create(DING_DONG, 1, 50, 1, -1, -1);
   buttonDingDong->attachPin();
 
+  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->isToogle(), "[5] isToogle DING-DONG");
   buttonDingDong->checkEvent(0);
   buttonDingDong->checkEvent(100);
-  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(false), "[5] getRelayState DING-DONG");
+  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(), "[6] getRelayState DING-DONG");
   pin.digitalWrite(LOW);  // ON
   buttonDingDong->checkEvent(200);
   buttonDingDong->checkEvent(300);
-  TEST_ASSERT_TRUE_MESSAGE(buttonDingDong->getRelayState(false), "[6] getRelayState DING-DONG");
+  TEST_ASSERT_TRUE_MESSAGE(buttonDingDong->getRelayState(), "[7] getRelayState DING-DONG");
   pin.digitalWrite(HIGH); // OFF
   buttonDingDong->checkEvent(400);
   buttonDingDong->checkEvent(500);
-  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(false), "[7] getRelayState DING-DONG");
+  TEST_ASSERT_FALSE_MESSAGE(buttonDingDong->getRelayState(), "[8] getRelayState DING-DONG");
 
   delete buttonDingDong;
 
   pin.digitalWrite(LOW); // CLOSED
-  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50);
+  ButtonInterface * buttonReedSwitch = ButtonInterface::create(REED_SWITCH, 1, 50, 1, -1, -1);
   buttonReedSwitch->attachPin();
 
+  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->isToogle(), "[9] isToogle REED-SWITCH");
   buttonReedSwitch->checkEvent(600);
   buttonReedSwitch->checkEvent(700);
-  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(false), "[8] getRelayState REED-SWITCH");
+  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(), "[10] getRelayState REED-SWITCH");
   pin.digitalWrite(HIGH); // OPEN
   buttonReedSwitch->checkEvent(800);
   buttonReedSwitch->checkEvent(900);
-  TEST_ASSERT_TRUE_MESSAGE(buttonReedSwitch->getRelayState(false), "[9] getRelayState REED-SWITCH");
+  TEST_ASSERT_TRUE_MESSAGE(buttonReedSwitch->getRelayState(), "[11] getRelayState REED-SWITCH");
   pin.digitalWrite(LOW); // CLOSED
   buttonReedSwitch->checkEvent(1000);
   buttonReedSwitch->checkEvent(1100);
-  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(false), "[10] getRelayState REED-SWITCH");
+  TEST_ASSERT_FALSE_MESSAGE(buttonReedSwitch->getRelayState(), "[12] getRelayState REED-SWITCH");
 
   delete buttonReedSwitch;
 };
 
 
+class FakeRelayService : public ButtonCallbackInterface
+{
+  public:
+    FakeRelayService(int relaysCount) {
+      _changeRelayState = new int[relaysCount];
+      _toogleRelayState = new bool[relaysCount];
+      for (size_t relayNum = 0; relayNum < relaysCount; relayNum++) {
+        _changeRelayState[relayNum] = -1;
+        _toogleRelayState[relayNum] = false;
+      }
+    };
+    virtual ~FakeRelayService() {
+      delete [] _toogleRelayState;
+      delete [] _changeRelayState;
+    };
+
+    bool changeRelayState(int relayNum, bool relayState, unsigned long millis) override {
+      _changeRelayState[relayNum] = (int) relayState;
+      return false;
+    };
+    bool toogleRelayState(int relayNum, unsigned long millis) override {
+      _toogleRelayState[relayNum] = true;
+      return false;
+    };
+  
+    int * _changeRelayState;
+    bool * _toogleRelayState;
+};
+
+
 void test_buttonservice()
 {
+  PinCreator pinCreator;
   const ButtonConfigDef buttonConfig[] = {
     {1, MONO_STABLE, 1, -1, -1, "Button 1"},
     {2, BI_STABLE,   2, -1, -1, "Button 2"},
     {3, DING_DONG,   3, -1, -1, "Button 3"},
-    {4, DING_DONG,   4, -1, -1, "Button 4"},
+    {4, REED_SWITCH, 4, -1, -1, "Button 4"},
   };
   const ButtonConfigRef buttonConfigRef = {buttonConfig, sizeof(buttonConfig) / sizeof(ButtonConfigDef)};
   Configuration configuration(gRelayConfigRef, buttonConfigRef);
 
-  ButtonService buttonService(configuration, 50);
-  // buttonService.attachPin(0);
-  // buttonService.attachPin(1);
+  TEST_ASSERT_NOT_NULL_MESSAGE(PinCreator::instance(), "[0] PinCreator::instance() shoud exists");
+  FakeRelayService fakeRelayService(buttonConfigRef.size);
+  ButtonService buttonService(configuration, 50, fakeRelayService);
+  FakePin::_state[1] = HIGH; //PULL-UP
+  FakePin::_state[2] = HIGH; //PULL-UP
+  FakePin::_state[3] = HIGH; //PULL-UP - LOW when pressed
+  FakePin::_state[4] = LOW;  //NC - Window closed
+  buttonService.attachPins();
 
-  // buttonService.setAction(0, 1, -1, -1);
-  // buttonService.setAction(2, 2, -1, -1);
-  // buttonService.checkEvent(0, 0);
-  // buttonService.checkEvent(1, 0);
-  // buttonService.checkEvent(0, 100);
-  // buttonService.checkEvent(1, 100);
+  buttonService.checkEventsAndDoActions(1UL);
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, fakeRelayService._changeRelayState[0], "[1] changeRelayState should not be called for MONO_STABLE on first run");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(-1, fakeRelayService._changeRelayState[1], "[2] changeRelayState should not be called for BI_STABLE on first run");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, fakeRelayService._changeRelayState[2], "[3] changeRelayState should be called for DING_DONG on first run");
+  TEST_ASSERT_EQUAL_INT_MESSAGE(0, fakeRelayService._changeRelayState[3], "[4] changeRelayState should be called for REED_SWITCH on first run");
+  TEST_ASSERT_FALSE_MESSAGE(fakeRelayService._toogleRelayState[0], "[5] toogleRelayState should not be called for MONO_STABLE on first run");
+  TEST_ASSERT_FALSE_MESSAGE(fakeRelayService._toogleRelayState[1], "[6] toogleRelayState should not be called for BI_STABLE on first run");
+  TEST_ASSERT_FALSE_MESSAGE(fakeRelayService._toogleRelayState[2], "[7] toogleRelayState should not be called for DING_DONG on first run");
+  TEST_ASSERT_FALSE_MESSAGE(fakeRelayService._toogleRelayState[3], "[8] toogleRelayState should not be called for REED_SWITCH on first run");
+  
+  FakePin::_state[1] = LOW;
+  fakeRelayService._toogleRelayState[0] = false;
+  buttonService.checkEventsAndDoActions(10UL);
+  buttonService.checkEventsAndDoActions(100UL);
+  TEST_ASSERT_TRUE_MESSAGE(fakeRelayService._toogleRelayState[0], "[9] toogleRelayState should be called for MONO_STABLE");
 
-  // TEST_ASSERT_EQUAL_INT_MESSAGE(HIGH, FakePin::_state[3], "[2] Lamp 3 should have pin state HIGH when turned OFF");
-  TEST_IGNORE_MESSAGE("Will have more sense to implement after refactoring in branch callback");
+  FakePin::_state[3] = LOW;
+  fakeRelayService._changeRelayState[2] = false;
+  buttonService.checkEventsAndDoActions(10UL);
+  buttonService.checkEventsAndDoActions(100UL);
+  TEST_ASSERT_TRUE_MESSAGE(fakeRelayService._changeRelayState[2], "[10] changeRelayState should be called for DING_DONG");
 
-    // bool getRelayState(size_t, bool);
+  TEST_ASSERT_FALSE_MESSAGE(buttonService.getRelayState(0), "[11] getRelayState should always be FALSE for MONO_STABLE");
+  TEST_ASSERT_FALSE_MESSAGE(buttonService.getRelayState(1), "[12] getRelayState should always be FALSE for BI_STABLE");
+  TEST_ASSERT_TRUE_MESSAGE(buttonService.getRelayState(2), "[13] getRelayState should be TRUE for DING_DONG");
+  TEST_ASSERT_FALSE_MESSAGE(buttonService.getRelayState(3), "[14] getRelayState should be FALSE for REED_SWITCH");
 };
 
 
 int main(int argc, char **argv)
 {
-  // std::cout << "Hello!" << std::endl; 
+  ButtonInterface::setEventIntervals(350, 800);
 
   UNITY_BEGIN();
 
